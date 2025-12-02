@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GitHub Profile Analyzer - Enhanced Edition</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     <style>
         /* --- Base & Variables --- */
         :root {
@@ -1490,6 +1491,8 @@
                             <a id="profile_link" href="#" target="_blank" class="btn btn-primary"><i class="fab fa-github"></i> View on GitHub</a>
                             <button id="export-pdf-btn" class="btn export-btn"><i class="fas fa-file-pdf"></i> Export PDF</button>
                             <button id="export-json-btn" class="btn export-btn"><i class="fas fa-file-code"></i> Export JSON</button>
+                            <button id="export-csv-btn" class="btn export-btn"><i class="fas fa-file-csv"></i> Export CSV</button>
+                            <button id="export-image-btn" class="btn export-btn"><i class="fas fa-image"></i> Export Image</button>
                             <button id="share-btn" class="btn export-btn"><i class="fas fa-share-alt"></i> Share</button>
                         </div>
                     </div>
@@ -1511,6 +1514,11 @@
                     <a href="#" class="tab-item" data-tab="collaboration-network"><i class="fas fa-project-diagram"></i> Collaboration Network</a>
                     <a href="#" class="tab-item" data-tab="achievements"><i class="fas fa-trophy"></i> Achievements</a>
                     <a href="#" class="tab-item" data-tab="productivity-score"><i class="fas fa-tachometer-alt"></i> Productivity Score</a>
+                    <a href="#" class="tab-item" data-tab="code-quality"><i class="fas fa-code"></i> Code Quality</a>
+                    <a href="#" class="tab-item" data-tab="social-influence"><i class="fas fa-users"></i> Social Influence</a>
+                    <a href="#" class="tab-item" data-tab="activity-patterns"><i class="fas fa-clock"></i> Activity Patterns</a>
+                    <a href="#" class="tab-item" data-tab="project-diversity"><i class="fas fa-sitemap"></i> Project Diversity</a>
+                    <a href="#" class="tab-item" data-tab="timezone-analysis"><i class="fas fa-globe"></i> Timezone Analysis</a>
                 </nav>
 
                 <!-- Tab Content -->
@@ -1726,6 +1734,57 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Code Quality Tab -->
+                    <div id="code-quality" class="tab-pane">
+                        <div class="card">
+                            <h2>Code Quality Analysis</h2>
+                            <div id="code-quality-metrics" class="health-metrics"></div>
+                            <div id="code-quality-recommendations" style="margin-top: 16px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Social Influence Tab -->
+                    <div id="social-influence" class="tab-pane">
+                        <div class="card">
+                            <h2>Social Influence Analysis</h2>
+                            <div id="social-influence-metrics" class="health-metrics"></div>
+                            <div id="social-influence-recommendations" style="margin-top: 16px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Activity Patterns Tab -->
+                    <div id="activity-patterns" class="tab-pane">
+                        <div class="card">
+                            <h2>Activity Patterns Analysis</h2>
+                            <div id="activity-patterns-chart" style="height: 300px; position: relative;">
+                                <canvas id="activity-patterns-canvas"></canvas>
+                            </div>
+                            <div id="activity-patterns-insights" style="margin-top: 16px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Project Diversity Tab -->
+                    <div id="project-diversity" class="tab-pane">
+                        <div class="card">
+                            <h2>Project Diversity Analysis</h2>
+                            <div id="project-diversity-chart" style="height: 300px; position: relative;">
+                                <canvas id="project-diversity-canvas"></canvas>
+                            </div>
+                            <div id="project-diversity-insights" style="margin-top: 16px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Timezone Analysis Tab -->
+                    <div id="timezone-analysis" class="tab-pane">
+                        <div class="card">
+                            <h2>Timezone Activity Analysis</h2>
+                            <div id="timezone-chart" style="height: 300px; position: relative;">
+                                <canvas id="timezone-canvas"></canvas>
+                            </div>
+                            <div id="timezone-insights" style="margin-top: 16px;"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1765,6 +1824,7 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -1791,7 +1851,12 @@
                     achievements: [],
                     productivityScore: 0,
                     trendingDevelopers: [],
-                    notifications: []
+                    notifications: [],
+                    codeQualityMetrics: {},
+                    socialInfluenceMetrics: {},
+                    activityPatternsData: {},
+                    projectDiversityData: {},
+                    timezoneData: {}
                 },
 
                 // --- DOM Elements ---
@@ -1840,6 +1905,8 @@
                     commitList: document.getElementById('commit-list'),
                     exportPdfBtn: document.getElementById('export-pdf-btn'),
                     exportJsonBtn: document.getElementById('export-json-btn'),
+                    exportCsvBtn: document.getElementById('export-csv-btn'),
+                    exportImageBtn: document.getElementById('export-image-btn'),
                     healthMetrics: document.getElementById('health-metrics'),
                     healthRecommendations: document.getElementById('health-recommendations'),
                     currentStreak: document.getElementById('current-streak'),
@@ -1856,7 +1923,17 @@
                     commitsFactor: document.getElementById('commits-factor'),
                     reposFactor: document.getElementById('repos-factor'),
                     issuesFactor: document.getElementById('issues-factor'),
-                    prFactor: document.getElementById('pr-factor')
+                    prFactor: document.getElementById('pr-factor'),
+                    codeQualityMetrics: document.getElementById('code-quality-metrics'),
+                    codeQualityRecommendations: document.getElementById('code-quality-recommendations'),
+                    socialInfluenceMetrics: document.getElementById('social-influence-metrics'),
+                    socialInfluenceRecommendations: document.getElementById('social-influence-recommendations'),
+                    activityPatternsCanvas: document.getElementById('activity-patterns-canvas'),
+                    activityPatternsInsights: document.getElementById('activity-patterns-insights'),
+                    projectDiversityCanvas: document.getElementById('project-diversity-canvas'),
+                    projectDiversityInsights: document.getElementById('project-diversity-insights'),
+                    timezoneCanvas: document.getElementById('timezone-canvas'),
+                    timezoneInsights: document.getElementById('timezone-insights')
                 },
                 
                 // --- Initialization ---
@@ -1941,6 +2018,8 @@
                     // Export functionality
                     this.elements.exportPdfBtn.addEventListener('click', () => this.exportToPDF());
                     this.elements.exportJsonBtn.addEventListener('click', () => this.exportToJSON());
+                    this.elements.exportCsvBtn.addEventListener('click', () => this.exportToCSV());
+                    this.elements.exportImageBtn.addEventListener('click', () => this.exportToImage());
                 },
                 
                 // --- Core Functions ---
@@ -2012,6 +2091,21 @@
                         
                         // Calculate productivity score
                         this.calculateProductivityScore();
+                        
+                        // Generate code quality metrics
+                        this.generateCodeQualityMetrics();
+                        
+                        // Generate social influence metrics
+                        this.generateSocialInfluenceMetrics();
+                        
+                        // Generate activity patterns data
+                        this.generateActivityPatternsData();
+                        
+                        // Generate project diversity data
+                        this.generateProjectDiversityData();
+                        
+                        // Generate timezone data
+                        this.generateTimezoneData();
                     } catch (error) {
                         console.error("Error fetching profile data:", error);
                         // Ensure arrays are initialized even on error
@@ -2454,1425 +2548,2135 @@
                     }
                 },
 
-                async loadTrendingDevelopers() {
+                generateCodeQualityMetrics() {
                     try {
-                        // Generate mock trending developers
-                        const names = ['torvalds', 'gaearon', 'sindresorhus', 'addyosmani', 'mojombo', 'defunkt', 'pjhyett', 'wycats', 'ezmobius', 'ivey'];
-                        const developers = [];
+                        const repos = Array.isArray(this.state.repositories) ? this.state.repositories : [];
+                        const activity = Array.isArray(this.state.activityData) ? this.state.activityData : [];
                         
-                        for (let i = 0; i < 5; i++) {
-                            const name = names[Math.floor(Math.random() * names.length)];
-                            const data = await this.fetchJSON(`https://api.github.com/users/${name}`);
-                            if (data) {
-                                developers.push({
-                                    name: data.name || data.login,
-                                    username: data.login,
-                                    avatar: data.avatar_url,
-                                    repos: data.public_repos,
-                                    followers: data.followers
-                                });
-                            }
-                        }
+                        // Calculate code quality metrics
+                        const totalCommits = activity.filter(e => e && e.type === 'PushEvent').length;
+                        const totalIssues = repos.reduce((total, repo) => total + (repo && repo.open_issues_count ? repo.open_issues_count : 0), 0);
+                        const totalPullRequests = activity.filter(e => e && e.type === 'PullRequestEvent').length;
+                        const totalReleases = repos.reduce((total, repo) => total + (repo && repo.releases ? repo.releases.length : 0), 0);
                         
-                        this.state.trendingDevelopers = developers;
-                        this.renderTrendingDevelopers();
-                    } catch (error) {
-                        console.error("Error loading trending developers:", error);
-                    }
-                },
-
-                renderTrendingDevelopers() {
-                    const container = this.elements.trendingList;
-                    if (!container) return;
-                    
-                    container.innerHTML = this.state.trendingDevelopers.map((dev, index) => `
-                        <div class="trending-item">
-                            <div class="trending-rank">${index + 1}</div>
-                            <div class="trending-info">
-                                <div class="trending-name">${dev.name}</div>
-                                <div class="trending-stats">
-                                    <i class="fas fa-code-branch"></i> ${dev.repos} repos
-                                    <i class="fas fa-users"></i> ${dev.followers} followers
-                                </div>
-                            </div>
-                        </div>
-                    `).join('');
-                },
-
-                initializeNotifications() {
-                    // Add a welcome notification
-                    setTimeout(() => {
-                        this.addNotification('info', 'Welcome to GitHub Profile Analyzer', 'Search for a GitHub username to get started');
-                    }, 1000);
-                },
-
-                addNotification(type, title, message) {
-                    const notification = document.createElement('div');
-                    notification.className = 'notification';
-                    
-                    let icon = 'fa-info-circle';
-                    if (type === 'success') icon = 'fa-check-circle';
-                    if (type === 'error') icon = 'fa-exclamation-circle';
-                    if (type === 'warning') icon = 'fa-exclamation-triangle';
-                    
-                    notification.innerHTML = `
-                        <div class="notification-icon"><i class="fas ${icon}"></i></div>
-                        <div class="notification-content">
-                            <div class="notification-title">${title}</div>
-                            <div class="notification-message">${message}</div>
-                        </div>
-                        <div class="notification-close"><i class="fas fa-times"></i></div>
-                    `;
-                    
-                    this.elements.notificationContainer.appendChild(notification);
-                    
-                    // Add close functionality
-                    notification.querySelector('.notification-close').addEventListener('click', () => {
-                        notification.remove();
-                    });
-                    
-                    // Auto-remove after 5 seconds
-                    setTimeout(() => {
-                        if (notification.parentNode) {
-                            notification.remove();
-                        }
-                    }, 5000);
-                },
-
-                toggleNotifications() {
-                    // This would typically show a dropdown with recent notifications
-                    this.addNotification('info', 'Notifications', 'You have no new notifications');
-                },
-
-                shareProfile() {
-                    if (!this.state.profileData || !this.state.profileData.login) return;
-                    
-                    const shareUrl = `${window.location.origin}?user=${this.state.profileData.login}`;
-                    
-                    if (navigator.share) {
-                        navigator.share({
-                            title: `${this.state.profileData.login}'s GitHub Profile`,
-                            text: `Check out ${this.state.profileData.login}'s GitHub profile analysis`,
-                            url: shareUrl
-                        }).catch(err => console.error('Error sharing:', err));
-                    } else {
-                        // Fallback - copy to clipboard
-                        navigator.clipboard.writeText(shareUrl)
-                            .then(() => this.addNotification('success', 'Link Copied', 'Profile link copied to clipboard'))
-                            .catch(err => console.error('Error copying link:', err));
-                    }
-                },
-
-                toggleTrending() {
-                    if (!this.elements.trendingSection) return;
-                    
-                    const isVisible = this.elements.trendingSection.style.display !== 'none';
-                    this.elements.trendingSection.style.display = isVisible ? 'none' : 'block';
-                },
-
-                renderProfile() {
-                    try {
-                        // Header
-                        const avatar = document.getElementById('avatar');
-                        const name = document.getElementById('name');
-                        const login = document.getElementById('login');
-                        const bio = document.getElementById('bio');
+                        // Calculate average commit message length (mock data)
+                        const avgCommitMessageLength = 25 + Math.random() * 50;
                         
-                        if (avatar && this.state.profileData && this.state.profileData.avatar_url) {
-                            avatar.src = this.state.profileData.avatar_url;
-                        }
-                        if (name) name.textContent = (this.state.profileData && this.state.profileData.name) || (this.state.profileData && this.state.profileData.login) || '';
-                        if (login) login.textContent = this.state.profileData ? `@${this.state.profileData.login}` : '';
-                        if (bio) bio.textContent = (this.state.profileData && this.state.profileData.bio) || '';
+                        // Calculate code coverage (mock data)
+                        const avgCodeCoverage = 60 + Math.random() * 30;
                         
-                        // Meta information
-                        const location = document.getElementById('location');
-                        const company = document.getElementById('company');
-                        const blogLink = document.getElementById('blog-link');
-                        const twitterLink = document.getElementById('twitter-link');
+                        // Calculate technical debt (mock data)
+                        const technicalDebt = Math.floor(Math.random() * 100);
                         
-                        if (location) location.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${(this.state.profileData && this.state.profileData.location) || 'Not Specified'}`;
-                        if (company) company.innerHTML = `<i class="fas fa-building"></i> ${(this.state.profileData && this.state.profileData.company) || 'Not Specified'}`;
-                        if (blogLink && this.state.profileData && this.state.profileData.blog) {
-                            blogLink.innerHTML = `<i class="fas fa-link"></i> <a href="${this.state.profileData.blog}" target="_blank">${this.state.profileData.blog}</a>`;
-                        }
-                        if (twitterLink && this.state.profileData && this.state.profileData.twitter_username) {
-                            twitterLink.innerHTML = `<i class="fab fa-twitter"></i> <a href="https://twitter.com/${this.state.profileData.twitter_username}" target="_blank">${this.state.profileData.twitter_username}</a>`;
-                        }
+                        // Calculate documentation quality (mock data)
+                        const documentationQuality = 60 + Math.random() * 30;
                         
-                        // Stats
-                        const followersCount = document.getElementById('followers-count');
-                        const followingCount = document.getElementById('following-count');
-                        const starsCount = document.getElementById('stars-count');
-                        const repoCount = document.getElementById('repo-count');
-                        const starredCount = document.getElementById('starred-count');
-                        const profileLink = document.getElementById('profile_link');
-                        
-                        if (followersCount) followersCount.textContent = (this.state.profileData && this.state.profileData.followers) || 0;
-                        if (followingCount) followingCount.textContent = (this.state.profileData && this.state.profileData.following) || 0;
-                        if (starsCount) starsCount.textContent = (this.state.profileData && this.state.profileData.total_stars) || 0;
-                        if (repoCount) repoCount.textContent = (this.state.profileData && this.state.profileData.public_repos) || 0;
-                        if (starredCount) starredCount.textContent = (this.state.starredRepos && this.state.starredRepos.length) || 0;
-                        if (profileLink && this.state.profileData && this.state.profileData.html_url) {
-                            profileLink.href = this.state.profileData.html_url;
-                        }
-
-                        // Tab-specific renders
-                        this.renderOverviewTab();
-                        this.renderRepositoriesTab();
-                        this.renderStarredTab();
-                        this.renderActivityTab();
-                        this.renderRepoHealthTab();
-                        this.renderContributionStreakTab();
-                        this.renderActivityHeatmapTab();
-                        this.renderFollowerGrowthTab();
-                        this.renderSkillsRadarTab();
-                        this.renderProjectTimelineTab();
-                        this.renderCollaborationNetworkTab();
-                        this.renderAchievementsTab();
-                        this.renderProductivityScoreTab();
-                        this.populateLanguageFilter();
-                        this.populateStarredLanguageFilter();
-                    } catch (error) {
-                        console.error("Error rendering profile:", error);
-                        this.showError("Error rendering profile data");
-                    }
-                },
-                
-                renderOverviewTab() {
-                    this.renderPinnedRepos();
-                    this.renderContributionGraph();
-                    this.renderLanguageChart();
-                },
-                
-                renderPinnedRepos() {
-                    const container = document.getElementById('pinned-repos-list');
-                    if (!container) return;
-                    
-                    const pinnedRepos = Array.isArray(this.state.repositories) ? this.state.repositories.slice(0, 6) : [];
-                    
-                    if (!pinnedRepos.length) {
-                        container.innerHTML = '<p>No repositories to display.</p>';
-                        return;
-                    }
-                    
-                    container.innerHTML = pinnedRepos.map(repo => {
-                        if (!repo) return '';
-                        return `
-                            <div class="pinned-item" data-repo-name="${repo.full_name || ''}">
-                                <h3><a href="${repo.html_url || '#'}" target="_blank">${repo.name || 'Unknown'}</a></h3>
-                                <p>${repo.description || ''}</p>
-                                <div class="repo-stats">
-                                    <span><span class="language-dot" style="background-color: ${this.getLanguageColor(repo.language)}"></span>${repo.language || 'N/A'}</span>
-                                    <span><i class="fas fa-star"></i> ${repo.stargazers_count || 0}</span>
-                                    <span><i class="fas fa-code-branch"></i> ${repo.forks_count || 0}</span>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-                    
-                    // Add click event to pinned repos
-                    container.querySelectorAll('.pinned-item').forEach(item => {
-                        item.addEventListener('click', (e) => {
-                            if (!e.target.closest('a')) {
-                                const repoName = item.dataset.repoName;
-                                if (repoName) this.fetchAndShowReadme(repoName);
-                            }
-                        });
-                    });
-                },
-
-                renderContributionGraph() {
-                    const graph = document.getElementById('contribution-graph');
-                    if (!graph) return;
-                    
-                    graph.innerHTML = '';
-                    let totalContributions = 0;
-                    
-                    const contributions = Array.isArray(this.state.contributionData) ? this.state.contributionData : [];
-                    
-                    // Create 53 weeks of 7 days each
-                    for (let i = 0; i < 53; i++) {
-                        for (let j = 0; j < 7; j++) {
-                            const day = document.createElement('div');
-                            day.classList.add('contribution-day');
-                            
-                            const tooltip = document.createElement('div');
-                            tooltip.classList.add('tooltip');
-                            
-                            const dayIndex = i * 7 + j;
-                            const contribution = contributions[dayIndex] || { count: 0, level: 0 };
-                            
-                            day.style.backgroundColor = `var(--contrib-level-${contribution.level})`;
-                            
-                            const date = new Date();
-                            date.setDate(date.getDate() - (53 * 7 - (i * 7 + j)));
-                            
-                            tooltip.textContent = `${contribution.count} contributions on ${date.toLocaleDateString()}`;
-                            
-                            day.appendChild(tooltip);
-                            graph.appendChild(day);
-                            
-                            totalContributions += contribution.count;
-                        }
-                    }
-                    
-                    const contribCount = document.getElementById('contrib-count');
-                    if (contribCount) {
-                        contribCount.textContent = `${totalContributions} contributions in the last year`;
-                    }
-                },
-
-                renderLanguageChart() {
-                    const chartContainer = document.getElementById('language-breakdown');
-                    if (!chartContainer) return;
-                    
-                    const languages = {};
-                    const repos = Array.isArray(this.state.repositories) ? this.state.repositories : [];
-                    
-                    repos.forEach(repo => {
-                        if (repo && repo.language) {
-                            languages[repo.language] = (languages[repo.language] || 0) + 1;
-                        }
-                    });
-                    
-                    const sortedLanguages = Object.entries(languages).sort((a, b) => b[1] - a[1]).slice(0, 5);
-                    const total = sortedLanguages.reduce((sum, [, count]) => sum + count, 0);
-
-                    if (sortedLanguages.length === 0) {
-                        chartContainer.innerHTML = '<p>No language data available.</p>';
-                        return;
-                    }
-                    
-                    chartContainer.innerHTML = sortedLanguages.map(([lang, count]) => {
-                        const percent = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
-                        return `
-                            <div class="language-bar">
-                                <div class="language-bar-name">${lang}</div>
-                                <div class="language-bar-container">
-                                    <div class="language-bar-fill" style="width: ${percent}%; background-color: ${this.getLanguageColor(lang)}"></div>
-                                </div>
-                                <div class="language-bar-percent">${percent}%</div>
-                            </div>
-                        `;
-                    }).join('');
-                },
-                
-                renderRepositoriesTab() {
-                    this.sortRepositories();
-                    this.renderRepositories();
-                },
-
-                sortRepositories() {
-                    if (!Array.isArray(this.state.repositories)) return;
-                    
-                    const sortValue = this.elements.repoSort ? this.elements.repoSort.value : 'updated';
-                    this.state.repositories.sort((a, b) => {
-                        if (!a || !b) return 0;
-                        if (sortValue === 'name') return (a.name || '').localeCompare(b.name || '');
-                        if (sortValue === 'stars') return (b.stargazers_count || 0) - (a.stargazers_count || 0);
-                        return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
-                    });
-                },
-
-                filterAndRenderRepos() {
-                    const searchTerm = this.elements.repoSearch ? this.elements.repoSearch.value.toLowerCase() : '';
-                    const language = this.elements.repoLanguageFilter ? this.elements.repoLanguageFilter.value : '';
-
-                    const filtered = (this.state.repositories || []).filter(repo => {
-                        if (!repo) return false;
-                        const matchesSearch = (repo.name || '').toLowerCase().includes(searchTerm) || 
-                                              (repo.description || '').toLowerCase().includes(searchTerm);
-                        const matchesLanguage = !language || repo.language === language;
-                        return matchesSearch && matchesLanguage;
-                    });
-
-                    this.renderRepositories(filtered);
-                },
-                
-                renderRepositories(reposToRender = null) {
-                    const container = this.elements.repoList;
-                    if (!container) return;
-                    
-                    const repos = reposToRender || (this.state.repositories || []);
-                    const start = (this.state.currentPage.repos - 1) * this.state.reposPerPage;
-                    const end = start + this.state.reposPerPage;
-                    const paginatedRepos = repos.slice(start, end);
-
-                    container.className = `repo-list-container ${this.state.repoView}-view`;
-                    container.innerHTML = paginatedRepos.map(repo => {
-                        if (!repo) return '';
-                        return `
-                            <div class="repo-item" data-repo-name="${repo.full_name || ''}">
-                                <h3><a href="${repo.html_url || '#'}" target="_blank">${repo.name || 'Unknown'}</a></h3>
-                                <p>${repo.description || ''}</p>
-                                <div class="repo-item-stats">
-                                    <span><span class="language-dot" style="background-color: ${this.getLanguageColor(repo.language)}"></span>${repo.language || 'N/A'}</span>
-                                    <span><i class="fas fa-star"></i> ${repo.stargazers_count || 0}</span>
-                                    <span><i class="fas fa-code-branch"></i> ${repo.forks_count || 0}</span>
-                                    <span>Updated on ${repo.updated_at ? new Date(repo.updated_at).toLocaleDateString() : 'Unknown'}</span>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-
-                    // Add click event to repo items
-                    container.querySelectorAll('.repo-item').forEach(item => {
-                        item.addEventListener('click', (e) => {
-                            if (!e.target.closest('a')) {
-                                const repoName = item.dataset.repoName;
-                                if (repoName) this.fetchAndShowReadme(repoName);
-                            }
-                        });
-                    });
-
-                    this.renderPagination(repos.length, 'repos');
-                },
-                
-                renderStarredTab() {
-                    this.sortStarred();
-                    this.renderStarred();
-                },
-
-                sortStarred() {
-                    if (!Array.isArray(this.state.starredRepos)) return;
-                    
-                    const sortValue = this.elements.starredSort ? this.elements.starredSort.value : 'starred_at';
-                    this.state.starredRepos.sort((a, b) => {
-                        if (!a || !b) return 0;
-                        if (sortValue === 'name') return (a.name || '').localeCompare(b.name || '');
-                        if (sortValue === 'stars') return (b.stargazers_count || 0) - (a.stargazers_count || 0);
-                        return new Date(b.starred_at || 0) - new Date(a.starred_at || 0);
-                    });
-                },
-                
-                filterAndRenderStarred() {
-                    const searchTerm = this.elements.starredSearch ? this.elements.starredSearch.value.toLowerCase() : '';
-                    const language = this.elements.starredLanguageFilter ? this.elements.starredLanguageFilter.value : '';
-
-                    const filtered = (this.state.starredRepos || []).filter(repo => {
-                        if (!repo) return false;
-                        const matchesSearch = (repo.name || '').toLowerCase().includes(searchTerm) || 
-                                              (repo.description || '').toLowerCase().includes(searchTerm);
-                        const matchesLanguage = !language || repo.language === language;
-                        return matchesSearch && matchesLanguage;
-                    });
-
-                    this.renderStarred(filtered);
-                },
-
-                renderStarred(reposToRender = null) {
-                    const container = this.elements.starredList;
-                    if (!container) return;
-                    
-                    const repos = reposToRender || (this.state.starredRepos || []);
-                    const start = (this.state.currentPage.starred - 1) * this.state.reposPerPage;
-                    const end = start + this.state.reposPerPage;
-                    const paginatedRepos = repos.slice(start, end);
-
-                    container.className = `starred-list-container ${this.state.starredView}-view`;
-                    container.innerHTML = paginatedRepos.map(repo => {
-                        if (!repo) return '';
-                        return `
-                            <div class="starred-item" data-repo-name="${repo.full_name || ''}">
-                                <h3><a href="${repo.html_url || '#'}" target="_blank">${repo.name || 'Unknown'}</a></h3>
-                                <p>${repo.description || ''}</p>
-                                <div class="starred-item-stats">
-                                    <span><span class="language-dot" style="background-color: ${this.getLanguageColor(repo.language)}"></span>${repo.language || 'N/A'}</span>
-                                    <span><i class="fas fa-star"></i> ${repo.stargazers_count || 0}</span>
-                                    <span>Starred on ${repo.starred_at ? new Date(repo.starred_at).toLocaleDateString() : 'Unknown'}</span>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-
-                    // Add click event to starred items
-                    container.querySelectorAll('.starred-item').forEach(item => {
-                        item.addEventListener('click', (e) => {
-                            if (!e.target.closest('a')) {
-                                const repoName = item.dataset.repoName;
-                                if (repoName) this.fetchAndShowReadme(repoName);
-                            }
-                        });
-                    });
-
-                    this.renderPagination(repos.length, 'starred');
-                },
-                
-                renderActivityTab() {
-                    const feed = document.getElementById('activity-feed');
-                    if (!feed) return;
-                    
-                    const activities = Array.isArray(this.state.activityData) ? this.state.activityData : [];
-                    
-                    if (!activities.length) {
-                        feed.innerHTML = '<p>No recent public activity.</p>';
-                        return;
-                    }
-                    
-                    feed.innerHTML = activities.map(event => {
-                        if (!event) return '';
-                        const timeAgo = this.formatTimeAgo(new Date(event.created_at));
-                        let icon, text;
-                        switch (event.type) {
-                            case 'PushEvent':
-                                icon = 'fa-code-branch';
-                                text = `Pushed ${event.payload && event.payload.commits ? event.payload.commits.length : 0} commit(s) to ${event.repo ? event.repo.name : 'Unknown'}`;
-                                break;
-                            case 'WatchEvent':
-                                icon = 'fa-star';
-                                text = `Starred ${event.repo ? event.repo.name : 'Unknown'}`;
-                                break;
-                            case 'IssuesEvent':
-                                icon = 'fa-exclamation-circle';
-                                text = `${event.payload && event.payload.action ? event.payload.action : 'Performed'} an issue in ${event.repo ? event.repo.name : 'Unknown'}`;
-                                break;
-                            case 'PullRequestEvent':
-                                icon = 'fa-code-pull-request';
-                                text = `${event.payload && event.payload.action ? event.payload.action : 'Performed'} a pull request in ${event.repo ? event.repo.name : 'Unknown'}`;
-                                break;
-                            case 'CreateEvent':
-                                icon = 'fa-plus-square';
-                                text = `Created ${event.payload && event.payload.ref_type ? event.payload.ref_type : 'item'} ${event.payload && event.payload.ref ? event.payload.ref : ''} in ${event.repo ? event.repo.name : 'Unknown'}`;
-                                break;
-                            default:
-                                return '';
-                        }
-                        return `
-                            <div class="activity-item">
-                                <div class="activity-icon">
-                                    <i class="fas ${icon}"></i>
-                                </div>
-                                <div class="activity-content">
-                                    <span>${text}</span>
-                                    <div class="activity-time">${timeAgo}</div>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-                },
-
-                renderRepoHealthTab() {
-                    const metricsContainer = this.elements.healthMetrics;
-                    const recommendationsContainer = this.elements.healthRecommendations;
-                    
-                    if (!metricsContainer || !recommendationsContainer) return;
-                    
-                    const repos = Array.isArray(this.state.repositories) ? this.state.repositories : [];
-                    const totalRepos = repos.length;
-                    const activeRepos = repos.filter(repo => {
-                        if (!repo || !repo.updated_at) return false;
-                        const lastUpdated = new Date(repo.updated_at);
-                        const threeMonthsAgo = new Date();
-                        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-                        return lastUpdated > threeMonthsAgo;
-                    }).length;
-                    
-                    const reposWithIssues = repos.filter(repo => repo && repo.open_issues_count > 0).length;
-                    const totalIssues = repos.reduce((total, repo) => total + (repo && repo.open_issues_count ? repo.open_issues_count : 0), 0);
-                    const avgIssuesPerRepo = totalRepos > 0 ? (totalIssues / totalRepos).toFixed(1) : 0;
-                    
-                    const reposWithLicense = repos.filter(repo => repo && repo.license).length;
-                    const forks = repos.reduce((total, repo) => total + (repo && repo.forks_count ? repo.forks_count : 0), 0);
-                    const watchers = repos.reduce((total, repo) => total + (repo && repo.watchers_count ? repo.watchers_count : 0), 0);
-                    
-                    // Render metrics
-                    metricsContainer.innerHTML = `
-                        <div class="health-metric">
-                            <div class="health-metric-value">${totalRepos}</div>
-                            <div class="health-metric-label">Total Repositories</div>
-                        </div>
-                        <div class="health-metric">
-                            <div class="health-metric-value">${activeRepos}</div>
-                            <div class="health-metric-label">Active Repositories</div>
-                            <div class="health-status ${activeRepos / totalRepos > 0.7 ? 'good' : activeRepos / totalRepos > 0.4 ? 'moderate' : 'poor'}">
-                                ${activeRepos / totalRepos > 0.7 ? 'Good' : activeRepos / totalRepos > 0.4 ? 'Moderate' : 'Needs Improvement'}
-                            </div>
-                        </div>
-                        <div class="health-metric">
-                            <div class="health-metric-value">${avgIssuesPerRepo}</div>
-                            <div class="health-metric-label">Avg. Issues per Repo</div>
-                            <div class="health-status ${avgIssuesPerRepo < 5 ? 'good' : avgIssuesPerRepo < 15 ? 'moderate' : 'poor'}">
-                                ${avgIssuesPerRepo < 5 ? 'Good' : avgIssuesPerRepo < 15 ? 'Moderate' : 'High'}
-                            </div>
-                        </div>
-                        <div class="health-metric">
-                            <div class="health-metric-value">${totalRepos > 0 ? Math.round(reposWithLicense / totalRepos * 100) : 0}%</div>
-                            <div class="health-metric-label">Repos with License</div>
-                            <div class="health-status ${totalRepos > 0 && reposWithLicense / totalRepos > 0.8 ? 'good' : totalRepos > 0 && reposWithLicense / totalRepos > 0.5 ? 'moderate' : 'poor'}">
-                                ${totalRepos > 0 && reposWithLicense / totalRepos > 0.8 ? 'Good' : totalRepos > 0 && reposWithLicense / totalRepos > 0.5 ? 'Moderate' : 'Needs Improvement'}
-                            </div>
-                        </div>
-                        <div class="health-metric">
-                            <div class="health-metric-value">${forks}</div>
-                            <div class="health-metric-label">Total Forks</div>
-                        </div>
-                        <div class="health-metric">
-                            <div class="health-metric-value">${watchers}</div>
-                            <div class="health-metric-label">Total Watchers</div>
-                        </div>
-                    `;
-                    
-                    // Generate recommendations
-                    const recommendations = [];
-                    
-                    if (totalRepos > 0 && activeRepos / totalRepos < 0.5) {
-                        recommendations.push("Consider updating or archiving inactive repositories to improve your profile's health score.");
-                    }
-                    
-                    if (avgIssuesPerRepo > 10) {
-                        recommendations.push("You have a high number of open issues. Consider addressing them to improve repository health.");
-                    }
-                    
-                    if (totalRepos > 0 && reposWithLicense / totalRepos < 0.5) {
-                        recommendations.push("Add licenses to your repositories to make them more accessible to other developers.");
-                    }
-                    
-                    if (recommendations.length === 0) {
-                        recommendations.push("Your repository health looks good! Keep up the great work.");
-                    }
-                    
-                    recommendationsContainer.innerHTML = `
-                        <h3>Recommendations</h3>
-                        <ul>
-                            ${recommendations.map(rec => `<li>${rec}</li>`).join('')}
-                        </ul>
-                    `;
-                },
-
-                renderContributionStreakTab() {
-                    const currentStreakEl = this.elements.currentStreak;
-                    const longestStreakEl = this.elements.longestStreak;
-                    const calendarEl = this.elements.streakCalendar;
-                    
-                    if (!currentStreakEl || !longestStreakEl || !calendarEl) return;
-                    
-                    const streak = this.state.streakData || { current: 0, longest: 0, contributions: [] };
-                    
-                    // Update streak values
-                    currentStreakEl.textContent = streak.current;
-                    longestStreakEl.textContent = streak.longest;
-                    
-                    // Render streak calendar
-                    calendarEl.innerHTML = '';
-                    
-                    // Get the last 30 days
-                    const today = new Date();
-                    for (let i = 29; i >= 0; i--) {
-                        const date = new Date(today);
-                        date.setDate(date.getDate() - i);
-                        
-                        const day = document.createElement('div');
-                        day.classList.add('streak-day');
-                        
-                        // Check if there was a contribution on this day
-                        const dateStr = date.toISOString().split('T')[0];
-                        const contribution = streak.contributions.find(c => c && c.date === dateStr);
-                        
-                        if (contribution && contribution.count > 0) {
-                            day.classList.add('active');
-                            day.title = `${contribution.count} contributions on ${date.toLocaleDateString()}`;
-                        } else {
-                            day.title = `No contributions on ${date.toLocaleDateString()}`;
-                        }
-                        
-                        calendarEl.appendChild(day);
-                    }
-                },
-
-                renderActivityHeatmapTab() {
-                    const container = this.elements.heatmapContainer;
-                    if (!container) return;
-                    
-                    container.innerHTML = '';
-                    
-                    // Render heatmap
-                    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                    const heatmapData = this.state.heatmapData || Array(7).fill().map(() => Array(24).fill(0));
-                    
-                    for (let day = 0; day < 7; day++) {
-                        for (let hour = 0; hour < 24; hour++) {
-                            const cell = document.createElement('div');
-                            cell.classList.add('heatmap-hour');
-                            
-                            // Set background color based on activity level
-                            const activityLevel = heatmapData[day] && heatmapData[day][hour] !== undefined ? heatmapData[day][hour] : 0;
-                            const opacity = Math.max(0.1, activityLevel);
-                            cell.style.backgroundColor = `var(--color-accent-fg)`;
-                            cell.style.opacity = opacity;
-                            
-                            cell.title = `${days[day]} ${hour}:00 - ${Math.round(activityLevel * 100)}% activity`;
-                            
-                            container.appendChild(cell);
-                        }
-                    }
-                },
-
-                renderFollowerGrowthTab() {
-                    const canvas = this.elements.growthCanvas;
-                    if (!canvas) return;
-                    
-                    const ctx = canvas.getContext('2d');
-                    if (!ctx) return;
-                    
-                    // Set canvas size
-                    canvas.width = canvas.offsetWidth;
-                    canvas.height = canvas.offsetHeight;
-                    
-                    // Get data
-                    const { months, followers } = this.state.followerGrowthData || { months: [], followers: [] };
-                    
-                    if (months.length === 0 || followers.length === 0) {
-                        ctx.font = '16px Arial';
-                        ctx.fillStyle = '#666';
-                        ctx.textAlign = 'center';
-                        ctx.fillText('No follower growth data available', canvas.width / 2, canvas.height / 2);
-                        return;
-                    }
-                    
-                    // Create chart
-                    try {
-                        new Chart(ctx, {
-                            type: 'line',
-                            data: {
-                                labels: months,
-                                datasets: [{
-                                    label: 'Followers',
-                                    data: followers,
-                                    backgroundColor: 'rgba(9, 105, 218, 0.2)',
-                                    borderColor: 'rgba(9, 105, 218, 1)',
-                                    borderWidth: 2,
-                                    tension: 0.1,
-                                    fill: true
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                scales: {
-                                    y: {
-                                        beginAtZero: true,
-                                        grid: {
-                                            color: 'rgba(0, 0, 0, 0.1)'
-                                        }
-                                    },
-                                    x: {
-                                        grid: {
-                                            display: false
-                                        }
-                                    }
-                                },
-                                plugins: {
-                                    legend: {
-                                        display: false
-                                    }
-                                }
-                            }
-                        });
-                    } catch (error) {
-                        console.error("Error creating follower growth chart:", error);
-                        ctx.font = '16px Arial';
-                        ctx.fillStyle = '#666';
-                        ctx.textAlign = 'center';
-                        ctx.fillText('Error loading follower growth data', canvas.width / 2, canvas.height / 2);
-                    }
-                },
-
-                renderSkillsRadarTab() {
-                    const canvas = this.elements.skillsRadarCanvas;
-                    if (!canvas) return;
-                    
-                    const ctx = canvas.getContext('2d');
-                    if (!ctx) return;
-                    
-                    // Set canvas size
-                    canvas.width = canvas.offsetWidth;
-                    canvas.height = canvas.offsetHeight;
-                    
-                    const skillsData = this.state.skillsData || [];
-                    
-                    if (skillsData.length === 0) {
-                        ctx.font = '16px Arial';
-                        ctx.fillStyle = '#666';
-                        ctx.textAlign = 'center';
-                        ctx.fillText('No skills data available', canvas.width / 2, canvas.height / 2);
-                        return;
-                    }
-                    
-                    // Create radar chart
-                    try {
-                        new Chart(ctx, {
-                            type: 'radar',
-                            data: {
-                                labels: skillsData.map(skill => skill.skill),
-                                datasets: [{
-                                    label: 'Skill Level',
-                                    data: skillsData.map(skill => skill.value),
-                                    backgroundColor: 'rgba(9, 105, 218, 0.2)',
-                                    borderColor: 'rgba(9, 105, 218, 1)',
-                                    borderWidth: 2,
-                                    pointBackgroundColor: 'rgba(9, 105, 218, 1)',
-                                    pointBorderColor: '#fff',
-                                    pointHoverBackgroundColor: '#fff',
-                                    pointHoverBorderColor: 'rgba(9, 105, 218, 1)'
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                scales: {
-                                    r: {
-                                        beginAtZero: true,
-                                        max: 100,
-                                        ticks: {
-                                            display: false
-                                        }
-                                    }
-                                },
-                                plugins: {
-                                    legend: {
-                                        display: false
-                                    }
-                                }
-                            }
-                        });
-                    } catch (error) {
-                        console.error("Error creating skills radar chart:", error);
-                        ctx.font = '16px Arial';
-                        ctx.fillStyle = '#666';
-                        ctx.textAlign = 'center';
-                        ctx.fillText('Error loading skills data', canvas.width / 2, canvas.height / 2);
-                    }
-                },
-
-                renderProjectTimelineTab() {
-                    const container = this.elements.timelineContainer;
-                    if (!container) return;
-                    
-                    const timelineData = this.state.timelineData || [];
-                    
-                    if (timelineData.length === 0) {
-                        container.innerHTML = '<p>No project timeline data available.</p>';
-                        return;
-                    }
-                    
-                    container.innerHTML = timelineData.map(item => `
-                        <div class="timeline-item">
-                            <div class="timeline-date">${item.date}</div>
-                            <div class="timeline-title">${item.title}</div>
-                            <div class="timeline-description">${item.description}</div>
-                            <div class="timeline-language">
-                                <span class="language-dot" style="background-color: ${this.getLanguageColor(item.language)}"></span>
-                                ${item.language}
-                            </div>
-                        </div>
-                    `).join('');
-                },
-
-                renderCollaborationNetworkTab() {
-                    const container = document.getElementById('network-container');
-                    if (!container) return;
-                    
-                    // Clear previous content
-                    container.innerHTML = '';
-                    
-                    const { nodes, links } = this.state.collaborationData;
-                    
-                    if (nodes.length === 0) {
-                        container.innerHTML = '<p>No collaboration data available.</p>';
-                        return;
-                    }
-                    
-                    // Create SVG for network visualization
-                    const svg = d3.select('#network-container')
-                        .append('svg')
-                        .attr('width', '100%')
-                        .attr('height', '100%');
-                    
-                    const width = container.offsetWidth;
-                    const height = 400;
-                    
-                    svg.attr('viewBox', [0, 0, width, height]);
-                    
-                    // Create simulation
-                    const simulation = d3.forceSimulation(nodes)
-                        .force('link', d3.forceLink(links).id(d => d.id).distance(50))
-                        .force('charge', d3.forceManyBody().strength(-100))
-                        .force('center', d3.forceCenter(width / 2, height / 2));
-                    
-                    // Create links
-                    const link = svg.append('g')
-                        .selectAll('line')
-                        .data(links)
-                        .enter().append('line')
-                        .attr('stroke', '#999')
-                        .attr('stroke-opacity', 0.6)
-                        .attr('stroke-width', d => Math.sqrt(d.value));
-                    
-                    // Create nodes
-                    const node = svg.append('g')
-                        .selectAll('circle')
-                        .data(nodes)
-                        .enter().append('circle')
-                        .attr('r', d => d.size || 5)
-                        .attr('fill', d => {
-                            if (d.group === 1) return '#0969da'; // User
-                            if (d.group === 2) return '#1a7f37'; // Repository
-                            return '#9a6700'; // Collaborator
-                        })
-                        .call(d3.drag()
-                            .on('start', dragstarted)
-                            .on('drag', dragged)
-                            .on('end', dragended));
-                    
-                    // Add labels
-                    const label = svg.append('g')
-                        .selectAll('text')
-                        .data(nodes)
-                        .enter().append('text')
-                        .text(d => d.name)
-                        .attr('font-size', '12px')
-                        .attr('dx', 12)
-                        .attr('dy', 4);
-                    
-                    // Update positions on simulation tick
-                    simulation.on('tick', () => {
-                        link
-                            .attr('x1', d => d.source.x)
-                            .attr('y1', d => d.source.y)
-                            .attr('x2', d => d.target.x)
-                            .attr('y2', d => d.target.y);
-                        
-                        node
-                            .attr('cx', d => d.x)
-                            .attr('cy', d => y);
-                        
-                        label
-                            .attr('x', d => d.x)
-                            .attr('y', d => d.y);
-                    });
-                    
-                    // Drag functions
-                    function dragstarted(event, d) {
-                        if (!event.active) simulation.alphaTarget(0.3).restart();
-                        d.fx = d.x;
-                        d.fy = d.y;
-                    }
-                    
-                    function dragged(event, d) {
-                        d.fx = event.x;
-                        d.fy = event.y;
-                    }
-                    
-                    function dragended(event, d) {
-                        if (!event.active) simulation.alphaTarget(0);
-                        d.fx = null;
-                        d.fy = null;
-                    }
-                },
-
-                renderAchievementsTab() {
-                    const container = this.elements.achievementsContainer;
-                    if (!container) return;
-                    
-                    const achievements = this.state.achievements || [];
-                    
-                    if (achievements.length === 0) {
-                        container.innerHTML = '<p>No achievements available.</p>';
-                        return;
-                    }
-                    
-                    container.innerHTML = achievements.map(achievement => `
-                        <div class="achievement ${achievement.unlocked ? '' : 'locked'}">
-                            <div class="achievement-icon">
-                                <i class="fas ${achievement.icon}"></i>
-                            </div>
-                            <div class="achievement-name">${achievement.name}</div>
-                            <div class="achievement-description">${achievement.description}</div>
-                        </div>
-                    `).join('');
-                },
-
-                renderProductivityScoreTab() {
-                    // This is handled in calculateProductivityScore method
-                    // which is called when the profile is rendered
-                },
-
-                async askAI() {
-                    const query = this.elements.aiQueryInput ? this.elements.aiQueryInput.value.trim() : '';
-                    if (!query) return this.showError("Please enter a question for the AI.");
-
-                    const responseEl = this.elements.aiResponse;
-                    if (responseEl) {
-                        responseEl.style.display = 'block';
-                        responseEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> AI is thinking...';
-                    }
-
-                    const context = `
-                        Profile: ${JSON.stringify(this.state.profileData, null, 2)}
-                        Top Repositories: ${JSON.stringify((this.state.repositories || []).slice(0, 5).map(r => ({ 
-                            name: r && r.name, 
-                            lang: r && r.language, 
-                            stars: r && r.stargazers_count, 
-                            desc: r && r.description 
-                        })), null, 2)}
-                        Contribution Streak: ${(this.state.streakData && this.state.streakData.current) || 0} days (Longest: ${(this.state.streakData && this.state.streakData.longest) || 0} days)
-                    `;
-                    
-                    try {
-                        // Simulate AI response since we can't use the real API without a proxy
-                        setTimeout(() => {
-                            if (responseEl) {
-                                responseEl.innerHTML = `
-                                    <h3>Simulated AI Response</h3>
-                                    <p>I apologize, but I couldn't connect to the AI service. Here's a simulated response based on your query:</p>
-                                    <p>Based on the profile data, this developer appears to be ${(this.state.profileData && this.state.profileData.followers > 100) ? 'well-established' : 'emerging'} in the GitHub community with ${(this.state.profileData && this.state.profileData.public_repos) || 0} public repositories.</p>
-                                    <p>Their primary programming languages appear to be ${Object.keys(this.getLanguageBreakdown()).slice(0, 3).join(', ')}.</p>
-                                    <p>They have maintained a contribution streak of ${(this.state.streakData && this.state.streakData.current) || 0} days, with their longest streak being ${(this.state.streakData && this.state.streakData.longest) || 0} days.</p>
-                                `;
-                            }
-                        }, 1500);
-                    } catch (error) {
-                        if (responseEl) {
-                            responseEl.innerHTML = `<p>Error: ${error.message}</p>`;
-                        }
-                    }
-                },
-
-                async handleCompare() {
-                    const username1 = this.elements.usernameInput ? this.elements.usernameInput.value.trim() : '';
-                    const username2 = this.elements.compareUsernameInput ? this.elements.compareUsernameInput.value.trim() : '';
-                    
-                    if (!username1 || !username2) return this.showError("Please enter both usernames to compare.");
-
-                    this.showLoading();
-                    try {
-                        const [user1, user2] = await Promise.all([
-                            this.fetchJSON(`https://api.github.com/users/${username1}`),
-                            this.fetchJSON(`https://api.github.com/users/${username2}`)
-                        ]);
-                        
-                        if (!user1 || !user2) throw new Error("One or both users not found.");
-                        
-                        // Fetch additional data for comparison
-                        const [user1Repos, user2Repos] = await Promise.all([
-                            this.fetchJSON(`https://api.github.com/users/${username1}/repos?per_page=100`),
-                            this.fetchJSON(`https://api.github.com/users/${username2}/repos?per_page=100`)
-                        ]);
-                        
-                        // Calculate additional metrics
-                        user1.totalStars = (user1Repos || []).reduce((total, repo) => total + (repo && repo.stargazers_count ? repo.stargazers_count : 0), 0);
-                        user2.totalStars = (user2Repos || []).reduce((total, repo) => total + (repo && repo.stargazers_count ? repo.stargazers_count : 0), 0);
-                        
-                        user1.totalForks = (user1Repos || []).reduce((total, repo) => total + (repo && repo.forks_count ? repo.forks_count : 0), 0);
-                        user2.totalForks = (user2Repos || []).reduce((total, repo) => total + (repo && repo.forks_count ? repo.forks_count : 0), 0);
-                        
-                        user1.avgRepoSize = (user1Repos || []).reduce((total, repo) => total + (repo && repo.size ? repo.size : 0), 0) / (user1Repos || []).length;
-                        user2.avgRepoSize = (user2Repos || []).reduce((total, repo) => total + (repo && repo.size ? repo.size : 0), 0) / (user2Repos || []).length;
-                        
-                        this.renderComparison(user1, user2);
-                        if (this.elements.comparisonResults) {
-                            this.elements.comparisonResults.style.display = 'block';
-                        }
-                        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-                    } catch (error) {
-                        this.showError(error.message);
-                    } finally {
-                        this.hideLoading();
-                    }
-                },
-                
-                renderComparison(user1, user2) {
-                    const table = document.getElementById('comparison-table');
-                    if (!table) return;
-                    
-                    const fields = [
-                        { key: 'name', label: 'Name' },
-                        { key: 'login', label: 'Username' },
-                        { key: 'public_repos', label: 'Public Repos' },
-                        { key: 'followers', label: 'Followers' },
-                        { key: 'following', label: 'Following' },
-                        { key: 'totalStars', label: 'Total Stars' },
-                        { key: 'totalForks', label: 'Total Forks' },
-                        { key: 'avgRepoSize', label: 'Avg. Repo Size (KB)', format: (val) => Math.round(val) },
-                        { key: 'created_at', label: 'Account Created', format: (val) => new Date(val).toLocaleDateString() }
-                    ];
-                    
-                    table.innerHTML = `
-                        <thead>
-                            <tr><th>Metric</th><th>${user1.login || 'User 1'}</th><th>${user2.login || 'User 2'}</th><th>Winner</th></tr>
-                        </thead>
-                        <tbody>
-                            ${fields.map(field => {
-                                const val1 = field.format ? field.format(user1[field.key]) : (user1[field.key] || 'N/A');
-                                const val2 = field.format ? field.format(user2[field.key]) : (user2[field.key] || 'N/A');
-                                
-                                let winner = '';
-                                if (field.key === 'created_at') {
-                                    winner = new Date(user1[field.key]) < new Date(user2[field.key]) ? user1.login : user2.login;
-                                } else if (typeof user1[field.key] === 'number' && typeof user2[field.key] === 'number') {
-                                    winner = user1[field.key] > user2[field.key] ? user1.login : user2.login;
-                                }
-                                
-                                return `
-                                    <tr>
-                                        <td><strong>${field.label}</strong></td>
-                                        <td>${val1}</td>
-                                        <td>${val2}</td>
-                                        <td>${winner ? `<strong>${winner}</strong>` : 'Tie'}</td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    `;
-                },
-
-                // --- README Modal --- 
-                async fetchAndShowReadme(repoFullName) {
-                    if (!this.elements.readmeModal || !this.elements.readmeTitle || !this.elements.readmeBody) return;
-                    
-                    this.elements.readmeModal.style.display = 'block';
-                    this.elements.readmeBody.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading README...';
-
-                    try {
-                        const repoData = await this.fetchJSON(`https://api.github.com/repos/${repoFullName}`);
-                        if (!repoData) throw new Error("Repository not found.");
-                        
-                        const defaultBranch = repoData.default_branch || 'main';
-
-                        let readmeData = await this.fetchJSON(`https://api.github.com/repos/${repoFullName}/readme`);
-                        if (!readmeData) {
-                            throw new Error("No README found.");
-                        }
-                        
-                        const content = atob(readmeData.content.replace(/\n/g, ''));
-                        
-                        this.elements.readmeTitle.textContent = `README of ${repoFullName}`;
-                        this.elements.readmeBody.innerHTML = marked.parse(content);
-                        
-                    } catch (error) {
-                        this.elements.readmeBody.innerHTML = `<p>Could not load README. ${error.message}</p>`;
-                    }
-                },
-
-                // --- Export Functions ---
-                exportToPDF() {
-                    try {
-                        const { jsPDF } = window.jspdf;
-                        const doc = new jsPDF();
-                        
-                        doc.setFontSize(20);
-                        doc.text(`GitHub Profile: ${(this.state.profileData && this.state.profileData.login) || 'Unknown'}`, 20, 20);
-                        
-                        doc.setFontSize(12);
-                        doc.text(`Name: ${(this.state.profileData && this.state.profileData.name) || 'N/A'}`, 20, 30);
-                        doc.text(`Bio: ${(this.state.profileData && this.state.profileData.bio) || 'N/A'}`, 20, 40);
-                        doc.text(`Location: ${(this.state.profileData && this.state.profileData.location) || 'N/A'}`, 20, 50);
-                        doc.text(`Company: ${(this.state.profileData && this.state.profileData.company) || 'N/A'}`, 20, 60);
-                        doc.text(`Followers: ${(this.state.profileData && this.state.profileData.followers) || 0}`, 20, 70);
-                        doc.text(`Following: ${(this.state.profileData && this.state.profileData.following) || 0}`, 20, 80);
-                        doc.text(`Public Repos: ${(this.state.profileData && this.state.profileData.public_repos) || 0}`, 20, 90);
-                        
-                        doc.setFontSize(16);
-                        doc.text('Top Repositories:', 20, 110);
-                        
-                        doc.setFontSize(12);
-                        const topRepos = (this.state.repositories || []).slice(0, 5);
-                        topRepos.forEach((repo, index) => {
-                            const y = 120 + (index * 10);
-                            doc.text(`${(repo && repo.name) || 'Unknown'} (${(repo && repo.stargazers_count) || 0} stars)`, 20, y);
-                        });
-                        
-                        doc.save(`${(this.state.profileData && this.state.profileData.login) || 'profile'}_profile.pdf`);
-                    } catch (error) {
-                        this.showError(`Error exporting PDF: ${error.message}`);
-                    }
-                },
-
-                exportToJSON() {
-                    try {
-                        const profileData = {
-                            profile: this.state.profileData,
-                            repositories: this.state.repositories,
-                            starred: this.state.starredRepos,
-                            activity: this.state.activityData,
-                            streak: this.state.streakData,
-                            skills: this.state.skillsData,
-                            achievements: this.state.achievements,
-                            productivityScore: this.state.productivityScore
+                        this.state.codeQualityMetrics = {
+                            totalCommits,
+                            totalIssues,
+                            totalPullRequests,
+                            totalReleases,
+                            avgCommitMessageLength: Math.round(avgCommitMessageLength),
+                            avgCodeCoverage: Math.round(avgCodeCoverage),
+                            technicalDebt,
+                            documentationQuality: Math.round(documentationQuality)
                         };
-                        
-                        const dataStr = JSON.stringify(profileData, null, 2);
-                        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-                        
-                        const exportFileDefaultName = `${(this.state.profileData && this.state.profileData.login) || 'profile'}_profile.json`;
-                        
-                        const linkElement = document.createElement('a');
-                        linkElement.setAttribute('href', dataUri);
-                        linkElement.setAttribute('download', exportFileDefaultName);
-                        linkElement.click();
                     } catch (error) {
-                        this.showError(`Error exporting JSON: ${error.message}`);
+                        console.error("Error generating code quality metrics:", error);
+                        this.state.codeQualityMetrics = {};
                     }
                 },
-                
-                // --- Helper Functions ---
-                async fetchJSON(url) {
+
+                generateSocialInfluenceMetrics() {
                     try {
-                        const response = await fetch(url);
-                        if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
-                        return response.json();
-                    } catch (error) {
-                        console.error(`Error fetching ${url}:`, error);
-                        throw error;
-                    }
-                },
-                
-                getLanguageColor(language) {
-                    const colors = { 
-                        JavaScript: '#f1e05a', 
-                        Python: '#3572A5', 
-                        'C++': '#f34b7d', 
-                        HTML: '#e34c26', 
-                        CSS: '#563d7c', 
-                        'C#': '#239120', 
-                        Java: '#b07219',
-                        TypeScript: '#2b7489',
-                        Go: '#00ADD8',
-                        Rust: '#dea584',
-                        PHP: '#4F5D95',
-                        Ruby: '#701516',
-                        Swift: '#ffac45'
-                    };
-                    return colors[language] || '#cccccc';
-                },
-                
-                getLanguageBreakdown() {
-                    const languages = {};
-                    const repos = Array.isArray(this.state.repositories) ? this.state.repositories : [];
-                    
-                    repos.forEach(repo => {
-                        if (repo && repo.language) {
-                            languages[repo.language] = (languages[repo.language] || 0) + 1;
-                        }
-                    });
-                    return languages;
-                },
-                
-                formatTimeAgo(date) {
-                    if (!date) return 'Unknown time';
-                    
-                    const seconds = Math.floor((new Date() - date) / 1000);
-                    if (seconds < 60) return 'just now';
-                    
-                    const intervals = { year: 31536000, month: 2592000, day: 86400, hour: 3600, minute: 60 };
-                    for (const [unit, secondsInUnit] of Object.entries(intervals)) {
-                        const interval = Math.floor(seconds / secondsInUnit);
-                        if (interval >= 1) return `${interval} ${unit}${interval > 1 ? 's' : ''} ago`;
-                    }
-                    return 'some time ago';
-                },
+                        const profile = this.state.profileData;
+                        const repos = Array.isArray(this.state.repositories) ? this.state.repositories : [];
+                        
+                        // Calculate social influence metrics
+                        const followers = profile && profile.followers ? profile.followers : 0;
+                        const following = profile && profile.following ? profile.following : 0;
+                        const totalStars = repos.reduce((total, repo) => total + (repo && repo.stargazers_count ? repo.stargazers_count : 0), 0);
+                        const totalForks = repos.reduce((total, repo) => total + (repo && repo.forks_count ? repo.forks_count : 0), 0);
 
-                switchTab(tabName) {
-                    this.state.currentTab = tabName;
-                    
-                    this.elements.tabNav.forEach(tab => {
-                        if (tab && tab.dataset) {
-                            tab.classList.toggle('active', tab.dataset.tab === tabName);
-                        }
-                    });
-                    
-                    this.elements.tabPanes.forEach(pane => {
-                        if (pane && pane.id) {
-                            pane.classList.toggle('active', pane.id === tabName);
-                        }
-                    });
-                    
-                    // Special handling for tabs that need to be rendered on demand
-                    if (tabName === 'follower-growth' && (!this.state.followerGrowthData || !this.state.followerGrowthData.months || this.state.followerGrowthData.months.length === 0)) {
-                        this.generateFollowerGrowthData();
-                        this.renderFollowerGrowthTab();
-                    }
-                },
-                
-                setRepoView(view) {
-                    this.state.repoView = view;
-                    if (this.elements.listViewBtn) {
-                        this.elements.listViewBtn.classList.toggle('active', view === 'list');
-                    }
-                    if (this.elements.gridViewBtn) {
-                        this.elements.gridViewBtn.classList.toggle('active', view === 'grid');
-                    }
-                    this.renderRepositories();
-                },
-                
-                toggleCompareMode() {
-                    if (!this.elements.compareSection) return;
-                    
-                    const isVisible = this.elements.compareSection.style.display !== 'none';
-                    this.elements.compareSection.style.display = isVisible ? 'none' : 'flex';
-                    
-                    if (this.elements.compareUsernameInput) {
-                        this.elements.compareUsernameInput.value = '';
-                    }
-                    if (this.elements.comparisonResults) {
-                        this.elements.comparisonResults.style.display = 'none';
-                    }
-                },
 
-                toggleTheme() {
-                    document.body.classList.toggle('dark-mode');
-                    const isDark = document.body.classList.contains('dark-mode');
-                    localStorage.setItem('darkMode', isDark);
-                    if (this.elements.themeToggle) {
-                        this.elements.themeToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-                    }
-                },
+const totalWatchers = repos.reduce((total, repo) => total + (repo && repo.watchers_count ? repo.watchers_count : 0), 0);
+        
+        // Calculate engagement metrics
+        const followerToFollowingRatio = following > 0 ? (followers / following).toFixed(2) : followers;
+        const starToForkRatio = totalForks > 0 ? (totalStars / totalForks).toFixed(2) : totalStars;
+        
+        // Calculate influence score (mock calculation)
+        const influenceScore = Math.round(
+            (followers * 0.4) + 
+            (totalStars * 0.3) + 
+            (totalForks * 0.2) + 
+            (totalWatchers * 0.1)
+        );
+        
+        this.state.socialInfluenceMetrics = {
+            followers,
+            following,
+            totalStars,
+            totalForks,
+            totalWatchers,
+            followerToFollowingRatio,
+            starToForkRatio,
+            influenceScore
+        };
+    } catch (error) {
+        console.error("Error generating social influence metrics:", error);
+        this.state.socialInfluenceMetrics = {};
+    }
+},
 
-                loadTheme() {
-                    const isDark = localStorage.getItem('darkMode') === 'true';
-                    if (isDark) {
-                        document.body.classList.add('dark-mode');
-                        if (this.elements.themeToggle) {
-                            this.elements.themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+generateActivityPatternsData() {
+    try {
+        const activity = Array.isArray(this.state.activityData) ? this.state.activityData : [];
+        const dayOfWeekActivity = Array(7).fill(0);
+        const hourOfDayActivity = Array(24).fill(0);
+        
+        activity.forEach(event => {
+            if (!event || !event.created_at) return;
+            const date = new Date(event.created_at);
+            const day = date.getDay();
+            const hour = date.getHours();
+            
+            if (day >= 0 && day < 7) dayOfWeekActivity[day]++;
+            if (hour >= 0 && hour < 24) hourOfDayActivity[hour]++;
+        });
+        
+        const mostActiveDay = this.getDayName(dayOfWeekActivity.indexOf(Math.max(...dayOfWeekActivity)));
+        const mostActiveHour = hourOfDayActivity.indexOf(Math.max(...hourOfDayActivity));
+        
+        this.state.activityPatternsData = {
+            dayOfWeekActivity,
+            hourOfDayActivity,
+            mostActiveDay,
+            mostActiveHour
+        };
+    } catch (error) {
+        console.error("Error generating activity patterns data:", error);
+        this.state.activityPatternsData = {};
+    }
+},
+
+generateProjectDiversityData() {
+    try {
+        const repos = Array.isArray(this.state.repositories) ? this.state.repositories : [];
+        const languages = {};
+        const topics = new Set();
+        const sizes = [];
+        
+        repos.forEach(repo => {
+            if (!repo) return;
+            
+            // Collect languages
+            if (repo.language) {
+                languages[repo.language] = (languages[repo.language] || 0) + 1;
+            }
+            
+            // Collect topics
+            if (repo.topics) {
+                repo.topics.forEach(topic => topics.add(topic));
+            }
+            
+            // Collect sizes
+            if (repo.size) {
+                sizes.push(repo.size);
+            }
+        });
+        
+        const languageCount = Object.keys(languages).length;
+        const topicCount = topics.size;
+        const avgRepoSize = sizes.length > 0 ? sizes.reduce((sum, size) => sum + size, 0) / sizes.length : 0;
+        
+        // Calculate diversity score (mock calculation)
+        const diversityScore = Math.round(
+            (languageCount * 10) + 
+            (topicCount * 5) + 
+            (avgRepoSize > 0 ? Math.min(avgRepoSize / 100, 20) : 0)
+        );
+        
+        this.state.projectDiversityData = {
+            languageCount,
+            topicCount,
+            avgRepoSize: Math.round(avgRepoSize),
+            diversityScore,
+            languageBreakdown: languages
+        };
+    } catch (error) {
+        console.error("Error generating project diversity data:", error);
+        this.state.projectDiversityData = {};
+    }
+},
+
+generateTimezoneData() {
+    try {
+        const activity = Array.isArray(this.state.activityData) ? this.state.activityData : [];
+        const timezoneOffsets = {};
+        
+        activity.forEach(event => {
+            if (!event || !event.created_at) return;
+            const date = new Date(event.created_at);
+            const offset = date.getTimezoneOffset();
+            timezoneOffsets[offset] = (timezoneOffsets[offset] || 0) + 1;
+        });
+        
+        // Find the most likely timezone
+        let mostLikelyTimezone = null;
+        let maxActivity = 0;
+        
+        for (const offset in timezoneOffsets) {
+            if (timezoneOffsets[offset] > maxActivity) {
+                maxActivity = timezoneOffsets[offset];
+                mostLikelyTimezone = parseInt(offset);
+            }
+        }
+        
+        // Convert offset to timezone name (mock conversion)
+        const timezoneName = this.getTimezoneName(mostLikelyTimezone);
+        
+        this.state.timezoneData = {
+            mostLikelyTimezone,
+            timezoneName,
+            activityByTimezone: timezoneOffsets
+        };
+    } catch (error) {
+        console.error("Error generating timezone data:", error);
+        this.state.timezoneData = {};
+    }
+},
+
+async loadTrendingDevelopers() {
+    try {
+        // Generate mock trending developers
+        const names = ['torvalds', 'gaearon', 'sindresorhus', 'addyosmani', 'mojombo', 'defunkt', 'pjhyett', 'wycats', 'ezmobius', 'ivey'];
+        const developers = [];
+        
+        for (let i = 0; i < 5; i++) {
+            const name = names[Math.floor(Math.random() * names.length)];
+            const data = await this.fetchJSON(`https://api.github.com/users/${name}`);
+            if (data) {
+                developers.push({
+                    name: data.name || data.login,
+                    username: data.login,
+                    avatar: data.avatar_url,
+                    repos: data.public_repos,
+                    followers: data.followers
+                });
+            }
+        }
+        
+        this.state.trendingDevelopers = developers;
+        this.renderTrendingDevelopers();
+    } catch (error) {
+        console.error("Error loading trending developers:", error);
+    }
+},
+
+renderTrendingDevelopers() {
+    const container = this.elements.trendingList;
+    if (!container) return;
+    
+    container.innerHTML = this.state.trendingDevelopers.map((dev, index) => `
+        <div class="trending-item">
+            <div class="trending-rank">${index + 1}</div>
+            <div class="trending-info">
+                <div class="trending-name">${dev.name}</div>
+                <div class="trending-stats">
+                    <i class="fas fa-code-branch"></i> ${dev.repos} repos
+                    <i class="fas fa-users"></i> ${dev.followers} followers
+                </div>
+            </div>
+        </div>
+    `).join('');
+},
+
+initializeNotifications() {
+    // Add a welcome notification
+    setTimeout(() => {
+        this.addNotification('info', 'Welcome to GitHub Profile Analyzer', 'Search for a GitHub username to get started');
+    }, 1000);
+},
+
+addNotification(type, title, message) {
+    const notification = document.createElement('div');
+    notification.className = 'notification';
+    
+    let icon = 'fa-info-circle';
+    if (type === 'success') icon = 'fa-check-circle';
+    if (type === 'error') icon = 'fa-exclamation-circle';
+    if (type === 'warning') icon = 'fa-exclamation-triangle';
+    
+    notification.innerHTML = `
+        <div class="notification-icon"><i class="fas ${icon}"></i></div>
+        <div class="notification-content">
+            <div class="notification-title">${title}</div>
+            <div class="notification-message">${message}</div>
+        </div>
+        <div class="notification-close"><i class="fas fa-times"></i></div>
+    `;
+    
+    this.elements.notificationContainer.appendChild(notification);
+    
+    // Add close functionality
+    notification.querySelector('.notification-close').addEventListener('click', () => {
+        notification.remove();
+    });
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+},
+
+toggleNotifications() {
+    // This would typically show a dropdown with recent notifications
+    this.addNotification('info', 'Notifications', 'You have no new notifications');
+},
+
+shareProfile() {
+    if (!this.state.profileData || !this.state.profileData.login) return;
+    
+    const shareUrl = `${window.location.origin}?user=${this.state.profileData.login}`;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: `${this.state.profileData.login}'s GitHub Profile`,
+            text: `Check out ${this.state.profileData.login}'s GitHub profile analysis`,
+            url: shareUrl
+        }).catch(err => console.error('Error sharing:', err));
+    } else {
+        // Fallback - copy to clipboard
+        navigator.clipboard.writeText(shareUrl)
+            .then(() => this.addNotification('success', 'Link Copied', 'Profile link copied to clipboard'))
+            .catch(err => console.error('Error copying link:', err));
+    }
+},
+
+toggleTrending() {
+    if (!this.elements.trendingSection) return;
+    
+    const isVisible = this.elements.trendingSection.style.display !== 'none';
+    this.elements.trendingSection.style.display = isVisible ? 'none' : 'block';
+},
+
+renderProfile() {
+    try {
+        // Header
+        const avatar = document.getElementById('avatar');
+        const name = document.getElementById('name');
+        const login = document.getElementById('login');
+        const bio = document.getElementById('bio');
+        
+        if (avatar && this.state.profileData && this.state.profileData.avatar_url) {
+            avatar.src = this.state.profileData.avatar_url;
+        }
+        if (name) name.textContent = (this.state.profileData && this.state.profileData.name) || (this.state.profileData && this.state.profileData.login) || '';
+        if (login) login.textContent = this.state.profileData ? `@${this.state.profileData.login}` : '';
+        if (bio) bio.textContent = (this.state.profileData && this.state.profileData.bio) || '';
+        
+        // Meta information
+        const location = document.getElementById('location');
+        const company = document.getElementById('company');
+        const blogLink = document.getElementById('blog-link');
+        const twitterLink = document.getElementById('twitter-link');
+        
+        if (location) location.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${(this.state.profileData && this.state.profileData.location) || 'Not Specified'}`;
+        if (company) company.innerHTML = `<i class="fas fa-building"></i> ${(this.state.profileData && this.state.profileData.company) || 'Not Specified'}`;
+        if (blogLink && this.state.profileData && this.state.profileData.blog) {
+            blogLink.innerHTML = `<i class="fas fa-link"></i> <a href="${this.state.profileData.blog}" target="_blank">${this.state.profileData.blog}</a>`;
+        }
+        if (twitterLink && this.state.profileData && this.state.profileData.twitter_username) {
+            twitterLink.innerHTML = `<i class="fab fa-twitter"></i> <a href="https://twitter.com/${this.state.profileData.twitter_username}" target="_blank">${this.state.profileData.twitter_username}</a>`;
+        }
+        
+        // Stats
+        const followersCount = document.getElementById('followers-count');
+        const followingCount = document.getElementById('following-count');
+        const starsCount = document.getElementById('stars-count');
+        const repoCount = document.getElementById('repo-count');
+        const starredCount = document.getElementById('starred-count');
+        const profileLink = document.getElementById('profile_link');
+        
+        if (followersCount) followersCount.textContent = (this.state.profileData && this.state.profileData.followers) || 0;
+        if (followingCount) followingCount.textContent = (this.state.profileData && this.state.profileData.following) || 0;
+        if (starsCount) starsCount.textContent = (this.state.profileData && this.state.profileData.total_stars) || 0;
+        if (repoCount) repoCount.textContent = (this.state.profileData && this.state.profileData.public_repos) || 0;
+        if (starredCount) starredCount.textContent = (this.state.starredRepos && this.state.starredRepos.length) || 0;
+        if (profileLink && this.state.profileData && this.state.profileData.html_url) {
+            profileLink.href = this.state.profileData.html_url;
+        }
+
+        // Tab-specific renders
+        this.renderOverviewTab();
+        this.renderRepositoriesTab();
+        this.renderStarredTab();
+        this.renderActivityTab();
+        this.renderRepoHealthTab();
+        this.renderContributionStreakTab();
+        this.renderActivityHeatmapTab();
+        this.renderFollowerGrowthTab();
+        this.renderSkillsRadarTab();
+        this.renderProjectTimelineTab();
+        this.renderCollaborationNetworkTab();
+        this.renderAchievementsTab();
+        this.renderProductivityScoreTab();
+        this.renderCodeQualityTab();
+        this.renderSocialInfluenceTab();
+        this.renderActivityPatternsTab();
+        this.renderProjectDiversityTab();
+        this.renderTimezoneAnalysisTab();
+        this.populateLanguageFilter();
+        this.populateStarredLanguageFilter();
+    } catch (error) {
+        console.error("Error rendering profile:", error);
+        this.showError("Error rendering profile data");
+    }
+},
+
+renderOverviewTab() {
+    this.renderPinnedRepos();
+    this.renderContributionGraph();
+    this.renderLanguageChart();
+},
+
+renderPinnedRepos() {
+    const container = document.getElementById('pinned-repos-list');
+    if (!container) return;
+    
+    const pinnedRepos = Array.isArray(this.state.repositories) ? this.state.repositories.slice(0, 6) : [];
+    
+    if (!pinnedRepos.length) {
+        container.innerHTML = '<p>No repositories to display.</p>';
+        return;
+    }
+    
+    container.innerHTML = pinnedRepos.map(repo => {
+        if (!repo) return '';
+        return `
+            <div class="pinned-item" data-repo-name="${repo.full_name || ''}">
+                <h3><a href="${repo.html_url || '#'}" target="_blank">${repo.name || 'Unknown'}</a></h3>
+                <p>${repo.description || ''}</p>
+                <div class="repo-stats">
+                    <span><span class="language-dot" style="background-color: ${this.getLanguageColor(repo.language)}"></span>${repo.language || 'N/A'}</span>
+                    <span><i class="fas fa-star"></i> ${repo.stargazers_count || 0}</span>
+                    <span><i class="fas fa-code-branch"></i> ${repo.forks_count || 0}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // Add click event to pinned repos
+    container.querySelectorAll('.pinned-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            if (!e.target.closest('a')) {
+                const repoName = item.dataset.repoName;
+                if (repoName) this.fetchAndShowReadme(repoName);
+            }
+        });
+    });
+},
+
+renderContributionGraph() {
+    const graph = document.getElementById('contribution-graph');
+    if (!graph) return;
+    
+    graph.innerHTML = '';
+    let totalContributions = 0;
+    
+    const contributions = Array.isArray(this.state.contributionData) ? this.state.contributionData : [];
+    
+    // Create 53 weeks of 7 days each
+    for (let i = 0; i < 53; i++) {
+        for (let j = 0; j < 7; j++) {
+            const day = document.createElement('div');
+            day.classList.add('contribution-day');
+            
+            const tooltip = document.createElement('div');
+            tooltip.classList.add('tooltip');
+            
+            const dayIndex = i * 7 + j;
+            const contribution = contributions[dayIndex] || { count: 0, level: 0 };
+            
+            day.style.backgroundColor = `var(--contrib-level-${contribution.level})`;
+            
+            const date = new Date();
+            date.setDate(date.getDate() - (53 * 7 - (i * 7 + j)));
+            
+            tooltip.textContent = `${contribution.count} contributions on ${date.toLocaleDateString()}`;
+            
+            day.appendChild(tooltip);
+            graph.appendChild(day);
+            
+            totalContributions += contribution.count;
+        }
+    }
+    
+    const contribCount = document.getElementById('contrib-count');
+    if (contribCount) {
+        contribCount.textContent = `${totalContributions} contributions in the last year`;
+    }
+},
+
+renderLanguageChart() {
+    const chartContainer = document.getElementById('language-breakdown');
+    if (!chartContainer) return;
+    
+    const languages = {};
+    const repos = Array.isArray(this.state.repositories) ? this.state.repositories : [];
+    
+    repos.forEach(repo => {
+        if (repo && repo.language) {
+            languages[repo.language] = (languages[repo.language] || 0) + 1;
+        }
+    });
+    
+    const sortedLanguages = Object.entries(languages).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const total = sortedLanguages.reduce((sum, [, count]) => sum + count, 0);
+
+    if (sortedLanguages.length === 0) {
+        chartContainer.innerHTML = '<p>No language data available.</p>';
+        return;
+    }
+    
+    chartContainer.innerHTML = sortedLanguages.map(([lang, count]) => {
+        const percent = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
+        return `
+            <div class="language-bar">
+                <div class="language-bar-name">${lang}</div>
+                <div class="language-bar-container">
+                    <div class="language-bar-fill" style="width: ${percent}%; background-color: ${this.getLanguageColor(lang)}"></div>
+                </div>
+                <div class="language-bar-percent">${percent}%</div>
+            </div>
+        `;
+    }).join('');
+},
+
+renderRepositoriesTab() {
+    this.sortRepositories();
+    this.renderRepositories();
+},
+
+sortRepositories() {
+    if (!Array.isArray(this.state.repositories)) return;
+    
+    const sortValue = this.elements.repoSort ? this.elements.repoSort.value : 'updated';
+    this.state.repositories.sort((a, b) => {
+        if (!a || !b) return 0;
+        if (sortValue === 'name') return (a.name || '').localeCompare(b.name || '');
+        if (sortValue === 'stars') return (b.stargazers_count || 0) - (a.stargazers_count || 0);
+        return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
+    });
+},
+
+filterAndRenderRepos() {
+    const searchTerm = this.elements.repoSearch ? this.elements.repoSearch.value.toLowerCase() : '';
+    const language = this.elements.repoLanguageFilter ? this.elements.repoLanguageFilter.value : '';
+
+    const filtered = (this.state.repositories || []).filter(repo => {
+        if (!repo) return false;
+        const matchesSearch = (repo.name || '').toLowerCase().includes(searchTerm) || 
+                              (repo.description || '').toLowerCase().includes(searchTerm);
+        const matchesLanguage = !language || repo.language === language;
+        return matchesSearch && matchesLanguage;
+    });
+
+    this.renderRepositories(filtered);
+},
+
+renderRepositories(reposToRender = null) {
+    const container = this.elements.repoList;
+    if (!container) return;
+    
+    const repos = reposToRender || (this.state.repositories || []);
+    const start = (this.state.currentPage.repos - 1) * this.state.reposPerPage;
+    const end = start + this.state.reposPerPage;
+    const paginatedRepos = repos.slice(start, end);
+
+    container.className = `repo-list-container ${this.state.repoView}-view`;
+    container.innerHTML = paginatedRepos.map(repo => {
+        if (!repo) return '';
+        return `
+            <div class="repo-item" data-repo-name="${repo.full_name || ''}">
+                <h3><a href="${repo.html_url || '#'}" target="_blank">${repo.name || 'Unknown'}</a></h3>
+                <p>${repo.description || ''}</p>
+                <div class="repo-item-stats">
+                    <span><span class="language-dot" style="background-color: ${this.getLanguageColor(repo.language)}"></span>${repo.language || 'N/A'}</span>
+                    <span><i class="fas fa-star"></i> ${repo.stargazers_count || 0}</span>
+                    <span><i class="fas fa-code-branch"></i> ${repo.forks_count || 0}</span>
+                    <span>Updated on ${repo.updated_at ? new Date(repo.updated_at).toLocaleDateString() : 'Unknown'}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Add click event to repo items
+    container.querySelectorAll('.repo-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            if (!e.target.closest('a')) {
+                const repoName = item.dataset.repoName;
+                if (repoName) this.fetchAndShowReadme(repoName);
+            }
+        });
+    });
+
+    this.renderPagination(repos.length, 'repos');
+},
+
+renderStarredTab() {
+    this.sortStarred();
+    this.renderStarred();
+},
+
+sortStarred() {
+    if (!Array.isArray(this.state.starredRepos)) return;
+    
+    const sortValue = this.elements.starredSort ? this.elements.starredSort.value : 'starred_at';
+    this.state.starredRepos.sort((a, b) => {
+        if (!a || !b) return 0;
+        if (sortValue === 'name') return (a.name || '').localeCompare(b.name || '');
+        if (sortValue === 'stars') return (b.stargazers_count || 0) - (a.stargazers_count || 0);
+        return new Date(b.starred_at || 0) - new Date(a.starred_at || 0);
+    });
+},
+
+filterAndRenderStarred() {
+    const searchTerm = this.elements.starredSearch ? this.elements.starredSearch.value.toLowerCase() : '';
+    const language = this.elements.starredLanguageFilter ? this.elements.starredLanguageFilter.value : '';
+
+    const filtered = (this.state.starredRepos || []).filter(repo => {
+        if (!repo) return false;
+        const matchesSearch = (repo.name || '').toLowerCase().includes(searchTerm) || 
+                              (repo.description || '').toLowerCase().includes(searchTerm);
+        const matchesLanguage = !language || repo.language === language;
+        return matchesSearch && matchesLanguage;
+    });
+
+    this.renderStarred(filtered);
+},
+
+renderStarred(reposToRender = null) {
+    const container = this.elements.starredList;
+    if (!container) return;
+    
+    const repos = reposToRender || (this.state.starredRepos || []);
+    const start = (this.state.currentPage.starred - 1) * this.state.reposPerPage;
+    const end = start + this.state.reposPerPage;
+    const paginatedRepos = repos.slice(start, end);
+
+    container.className = `starred-list-container ${this.state.starredView}-view`;
+    container.innerHTML = paginatedRepos.map(repo => {
+        if (!repo) return '';
+        return `
+            <div class="starred-item" data-repo-name="${repo.full_name || ''}">
+                <h3><a href="${repo.html_url || '#'}" target="_blank">${repo.name || 'Unknown'}</a></h3>
+                <p>${repo.description || ''}</p>
+                <div class="starred-item-stats">
+                    <span><span class="language-dot" style="background-color: ${this.getLanguageColor(repo.language)}"></span>${repo.language || 'N/A'}</span>
+                    <span><i class="fas fa-star"></i> ${repo.stargazers_count || 0}</span>
+                    <span>Starred on ${repo.starred_at ? new Date(repo.starred_at).toLocaleDateString() : 'Unknown'}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Add click event to starred items
+    container.querySelectorAll('.starred-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            if (!e.target.closest('a')) {
+                const repoName = item.dataset.repoName;
+                if (repoName) this.fetchAndShowReadme(repoName);
+            }
+        });
+    });
+
+    this.renderPagination(repos.length, 'starred');
+},
+
+renderActivityTab() {
+    const feed = document.getElementById('activity-feed');
+    if (!feed) return;
+    
+    const activities = Array.isArray(this.state.activityData) ? this.state.activityData : [];
+    
+    if (!activities.length) {
+        feed.innerHTML = '<p>No recent public activity.</p>';
+        return;
+    }
+    
+    feed.innerHTML = activities.map(event => {
+        if (!event) return '';
+        const timeAgo = this.formatTimeAgo(new Date(event.created_at));
+        let icon, text;
+        switch (event.type) {
+            case 'PushEvent':
+                icon = 'fa-code-branch';
+                text = `Pushed ${event.payload && event.payload.commits ? event.payload.commits.length : 0} commit(s) to ${event.repo ? event.repo.name : 'Unknown'}`;
+                break;
+            case 'WatchEvent':
+                icon = 'fa-star';
+                text = `Starred ${event.repo ? event.repo.name : 'Unknown'}`;
+                break;
+            case 'IssuesEvent':
+                icon = 'fa-exclamation-circle';
+                text = `${event.payload && event.payload.action ? event.payload.action : 'Performed'} an issue in ${event.repo ? event.repo.name : 'Unknown'}`;
+                break;
+            case 'PullRequestEvent':
+                icon = 'fa-code-pull-request';
+                text = `${event.payload && event.payload.action ? event.payload.action : 'Performed'} a pull request in ${event.repo ? event.repo.name : 'Unknown'}`;
+                break;
+            case 'CreateEvent':
+                icon = 'fa-plus-square';
+                text = `Created ${event.payload && event.payload.ref_type ? event.payload.ref_type : 'item'} ${event.payload && event.payload.ref ? event.payload.ref : ''} in ${event.repo ? event.repo.name : 'Unknown'}`;
+                break;
+            default:
+                return '';
+        }
+        return `
+            <div class="activity-item">
+                <div class="activity-icon">
+                    <i class="fas ${icon}"></i>
+                </div>
+                <div class="activity-content">
+                    <span>${text}</span>
+                    <div class="activity-time">${timeAgo}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+},
+
+renderRepoHealthTab() {
+    const metricsContainer = this.elements.healthMetrics;
+    const recommendationsContainer = this.elements.healthRecommendations;
+    
+    if (!metricsContainer || !recommendationsContainer) return;
+    
+    const repos = Array.isArray(this.state.repositories) ? this.state.repositories : [];
+    const totalRepos = repos.length;
+    const activeRepos = repos.filter(repo => {
+        if (!repo || !repo.updated_at) return false;
+        const lastUpdated = new Date(repo.updated_at);
+        const threeMonthsAgo = new Date();
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+        return lastUpdated > threeMonthsAgo;
+    }).length;
+    
+    const reposWithIssues = repos.filter(repo => repo && repo.open_issues_count > 0).length;
+    const totalIssues = repos.reduce((total, repo) => total + (repo && repo.open_issues_count ? repo.open_issues_count : 0), 0);
+    const avgIssuesPerRepo = totalRepos > 0 ? (totalIssues / totalRepos).toFixed(1) : 0;
+    
+    const reposWithLicense = repos.filter(repo => repo && repo.license).length;
+    const forks = repos.reduce((total, repo) => total + (repo && repo.forks_count ? repo.forks_count : 0), 0);
+    const watchers = repos.reduce((total, repo) => total + (repo && repo.watchers_count ? repo.watchers_count : 0), 0);
+    
+    // Render metrics
+    metricsContainer.innerHTML = `
+        <div class="health-metric">
+            <div class="health-metric-value">${totalRepos}</div>
+            <div class="health-metric-label">Total Repositories</div>
+        </div>
+        <div class="health-metric">
+            <div class="health-metric-value">${activeRepos}</div>
+            <div class="health-metric-label">Active Repositories</div>
+            <div class="health-status ${activeRepos / totalRepos > 0.7 ? 'good' : activeRepos / totalRepos > 0.4 ? 'moderate' : 'poor'}">
+                ${activeRepos / totalRepos > 0.7 ? 'Good' : activeRepos / totalRepos > 0.4 ? 'Moderate' : 'Needs Improvement'}
+            </div>
+        </div>
+        <div class="health-metric">
+            <div class="health-metric-value">${avgIssuesPerRepo}</div>
+            <div class="health-metric-label">Avg. Issues per Repo</div>
+            <div class="health-status ${avgIssuesPerRepo < 5 ? 'good' : avgIssuesPerRepo < 15 ? 'moderate' : 'poor'}">
+                ${avgIssuesPerRepo < 5 ? 'Good' : avgIssuesPerRepo < 15 ? 'Moderate' : 'High'}
+            </div>
+        </div>
+        <div class="health-metric">
+            <div class="health-metric-value">${totalRepos > 0 ? Math.round(reposWithLicense / totalRepos * 100) : 0}%</div>
+            <div class="health-metric-label">Repos with License</div>
+            <div class="health-status ${totalRepos > 0 && reposWithLicense / totalRepos > 0.8 ? 'good' : totalRepos > 0 && reposWithLicense / totalRepos > 0.5 ? 'moderate' : 'poor'}">
+                ${totalRepos > 0 && reposWithLicense / totalRepos > 0.8 ? 'Good' : totalRepos > 0 && reposWithLicense / totalRepos > 0.5 ? 'Moderate' : 'Needs Improvement'}
+            </div>
+        </div>
+        <div class="health-metric">
+            <div class="health-metric-value">${forks}</div>
+            <div class="health-metric-label">Total Forks</div>
+        </div>
+        <div class="health-metric">
+            <div class="health-metric-value">${watchers}</div>
+            <div class="health-metric-label">Total Watchers</div>
+        </div>
+    `;
+    
+    // Generate recommendations
+    const recommendations = [];
+    
+    if (totalRepos > 0 && activeRepos / totalRepos < 0.5) {
+        recommendations.push("Consider updating or archiving inactive repositories to improve your profile's health score.");
+    }
+    
+    if (avgIssuesPerRepo > 10) {
+        recommendations.push("You have a high number of open issues. Consider addressing them to improve repository health.");
+    }
+    
+    if (totalRepos > 0 && reposWithLicense / totalRepos < 0.5) {
+        recommendations.push("Add licenses to your repositories to make them more accessible to other developers.");
+    }
+    
+    if (recommendations.length === 0) {
+        recommendations.push("Your repository health looks good! Keep up the great work.");
+    }
+    
+    recommendationsContainer.innerHTML = `
+        <h3>Recommendations</h3>
+        <ul>
+            ${recommendations.map(rec => `<li>${rec}</li>`).join('')}
+        </ul>
+    `;
+},
+
+renderContributionStreakTab() {
+    const currentStreakEl = this.elements.currentStreak;
+    const longestStreakEl = this.elements.longestStreak;
+    const calendarEl = this.elements.streakCalendar;
+    
+    if (!currentStreakEl || !longestStreakEl || !calendarEl) return;
+    
+    const streak = this.state.streakData || { current: 0, longest: 0, contributions: [] };
+    
+    // Update streak values
+    currentStreakEl.textContent = streak.current;
+    longestStreakEl.textContent = streak.longest;
+    
+    // Render streak calendar
+    calendarEl.innerHTML = '';
+    
+    // Get the last 30 days
+    const today = new Date();
+    for (let i = 29; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        
+        const day = document.createElement('div');
+        day.classList.add('streak-day');
+        
+        // Check if there was a contribution on this day
+        const dateStr = date.toISOString().split('T')[0];
+        const contribution = streak.contributions.find(c => c && c.date === dateStr);
+        
+        if (contribution && contribution.count > 0) {
+            day.classList.add('active');
+            day.title = `${contribution.count} contributions on ${date.toLocaleDateString()}`;
+        } else {
+            day.title = `No contributions on ${date.toLocaleDateString()}`;
+        }
+        
+        calendarEl.appendChild(day);
+    }
+},
+
+renderActivityHeatmapTab() {
+    const container = this.elements.heatmapContainer;
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    // Render heatmap
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const heatmapData = this.state.heatmapData || Array(7).fill().map(() => Array(24).fill(0));
+    
+    for (let day = 0; day < 7; day++) {
+        for (let hour = 0; hour < 24; hour++) {
+            const cell = document.createElement('div');
+            cell.classList.add('heatmap-hour');
+            
+            // Set background color based on activity level
+            const activityLevel = heatmapData[day] && heatmapData[day][hour] !== undefined ? heatmapData[day][hour] : 0;
+            const opacity = Math.max(0.1, activityLevel);
+            cell.style.backgroundColor = `var(--color-accent-fg)`;
+            cell.style.opacity = opacity;
+            
+            cell.title = `${days[day]} ${hour}:00 - ${Math.round(activityLevel * 100)}% activity`;
+            
+            container.appendChild(cell);
+        }
+    }
+},
+
+renderFollowerGrowthTab() {
+    const canvas = this.elements.growthCanvas;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Set canvas size
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    
+    // Get data
+    const { months, followers } = this.state.followerGrowthData || { months: [], followers: [] };
+    
+    if (months.length === 0 || followers.length === 0) {
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.fillText('No follower growth data available', canvas.width / 2, canvas.height / 2);
+        return;
+    }
+    
+    // Create chart
+    try {
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'Followers',
+                    data: followers,
+                    backgroundColor: 'rgba(9, 105, 218, 0.2)',
+                    borderColor: 'rgba(9, 105, 218, 1)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
                         }
                     }
                 },
-                
-                addToSearchHistory(username) {
-                    if (!username || !this.state.searchHistory) return;
-                    
-                    if (!this.state.searchHistory.includes(username)) {
-                        this.state.searchHistory.unshift(username);
-                        this.state.searchHistory = this.state.searchHistory.slice(0, 5);
-                        localStorage.setItem('searchHistory', JSON.stringify(this.state.searchHistory));
-                        this.renderSearchHistory();
-                    }
-                },
-
-                renderSearchHistory() {
-                    const historyContainer = document.getElementById('search-history');
-                    if (!historyContainer || !this.state.searchHistory) return;
-                    
-                    historyContainer.innerHTML = this.state.searchHistory.map(user => 
-                        `<span class="history-item" onclick="App.elements.usernameInput.value='${user}'; App.handleSearch();"><i class="fas fa-history"></i>${user}</span>`
-                    ).join('');
-                },
-                
-                renderPagination(totalItems, type) {
-                    const totalPages = Math.ceil(totalItems / this.state.reposPerPage);
-                    const paginationContainer = type === 'repos' ? 
-                        this.elements.repoPagination : 
-                        this.elements.starredPagination;
-                    
-                    if (!paginationContainer) return;
-                    
-                    paginationContainer.innerHTML = '';
-
-                    if (totalPages <= 1) return;
-
-                    for (let i = 1; i <= totalPages; i++) {
-                        const btn = document.createElement('button');
-                        btn.textContent = i;
-                        btn.classList.toggle('active', i === this.state.currentPage[type]);
-                        btn.addEventListener('click', () => {
-                            this.state.currentPage[type] = i;
-                            if (type === 'repos') {
-                                this.filterAndRenderRepos();
-                            } else {
-                                this.filterAndRenderStarred();
-                            }
-                        });
-                        paginationContainer.appendChild(btn);
-                    }
-                },
-                
-                populateLanguageFilter() {
-                    if (!this.elements.repoLanguageFilter) return;
-                    
-                    const languages = new Set();
-                    const repos = Array.isArray(this.state.repositories) ? this.state.repositories : [];
-                    
-                    repos.forEach(repo => {
-                        if (repo && repo.language) {
-                            languages.add(repo.language);
-                        }
-                    });
-                    
-                    const currentValue = this.elements.repoLanguageFilter.value;
-                    this.elements.repoLanguageFilter.innerHTML = '<option value="">Language: All</option>';
-                    
-                    Array.from(languages).sort().forEach(lang => {
-                        const option = document.createElement('option');
-                        option.value = lang;
-                        option.textContent = lang;
-                        this.elements.repoLanguageFilter.appendChild(option);
-                    });
-                    
-                    this.elements.repoLanguageFilter.value = currentValue;
-                },
-                
-                populateStarredLanguageFilter() {
-                    if (!this.elements.starredLanguageFilter) return;
-                    
-                    const languages = new Set();
-                    const repos = Array.isArray(this.state.starredRepos) ? this.state.starredRepos : [];
-                    
-                    repos.forEach(repo => {
-                        if (repo && repo.language) {
-                            languages.add(repo.language);
-                        }
-                    });
-                    
-                    const currentValue = this.elements.starredLanguageFilter.value;
-                    this.elements.starredLanguageFilter.innerHTML = '<option value="">Language: All</option>';
-                    
-                    Array.from(languages).sort().forEach(lang => {
-                        const option = document.createElement('option');
-                        option.value = lang;
-                        option.textContent = lang;
-                        this.elements.starredLanguageFilter.appendChild(option);
-                    });
-                    
-                    this.elements.starredLanguageFilter.value = currentValue;
-                },
-                
-                showLoading() { 
-                    if (this.elements.loadingContainer) {
-                        this.elements.loadingContainer.style.display = 'block'; 
-                    }
-                },
-                hideLoading() { 
-                    if (this.elements.loadingContainer) {
-                        this.elements.loadingContainer.style.display = 'none'; 
-                    }
-                },
-                showResults() { 
-                    if (this.elements.profileWrapper) {
-                        this.elements.profileWrapper.style.display = 'block'; 
-                    }
-                },
-                hideResults() { 
-                    if (this.elements.profileWrapper) {
-                        this.elements.profileWrapper.style.display = 'none'; 
-                    }
-                },
-                showError(message) {
-                    if (this.elements.errorContainer) {
-                        this.elements.errorContainer.textContent = message;
-                        this.elements.errorContainer.style.display = 'block';
-                    }
-                    this.hideLoading();
-                },
-                clearErrors() { 
-                    if (this.elements.errorContainer) {
-                        this.elements.errorContainer.style.display = 'none'; 
+                plugins: {
+                    legend: {
+                        display: false
                     }
                 }
-            };
-
-            App.init();
+            }
         });
-    </script>
+    } catch (error) {
+        console.error("Error creating follower growth chart:", error);
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.fillText('Error loading follower growth data', canvas.width / 2, canvas.height / 2);
+    }
+},
+
+renderSkillsRadarTab() {
+    const canvas = this.elements.skillsRadarCanvas;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Set canvas size
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    
+    const skillsData = this.state.skillsData || [];
+    
+    if (skillsData.length === 0) {
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.fillText('No skills data available', canvas.width / 2, canvas.height / 2);
+        return;
+    }
+    
+    // Create radar chart
+    try {
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: skillsData.map(skill => skill.skill),
+                datasets: [{
+                    label: 'Skill Level',
+                    data: skillsData.map(skill => skill.value),
+                    backgroundColor: 'rgba(9, 105, 218, 0.2)',
+                    borderColor: 'rgba(9, 105, 218, 1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(9, 105, 218, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(9, 105, 218, 1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            display: false
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error("Error creating skills radar chart:", error);
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.fillText('Error loading skills data', canvas.width / 2, canvas.height / 2);
+    }
+},
+
+renderProjectTimelineTab() {
+    const container = this.elements.timelineContainer;
+    if (!container) return;
+    
+    const timelineData = this.state.timelineData || [];
+    
+    if (timelineData.length === 0) {
+        container.innerHTML = '<p>No project timeline data available.</p>';
+        return;
+    }
+    
+    container.innerHTML = timelineData.map(item => `
+        <div class="timeline-item">
+            <div class="timeline-date">${item.date}</div>
+            <div class="timeline-title">${item.title}</div>
+            <div class="timeline-description">${item.description}</div>
+            <div class="timeline-language">
+                <span class="language-dot" style="background-color: ${this.getLanguageColor(item.language)}"></span>
+                ${item.language}
+            </div>
+        </div>
+    `).join('');
+},
+
+renderCollaborationNetworkTab() {
+    const container = document.getElementById('network-container');
+    if (!container) return;
+    
+    // Clear previous content
+    container.innerHTML = '';
+    
+    const { nodes, links } = this.state.collaborationData;
+    
+    if (nodes.length === 0) {
+        container.innerHTML = '<p>No collaboration data available.</p>';
+        return;
+    }
+    
+    // Create SVG for network visualization
+    const svg = d3.select('#network-container')
+        .append('svg')
+        .attr('width', '100%')
+        .attr('height', '100%');
+    
+    const width = container.offsetWidth;
+    const height = 400;
+    
+    svg.attr('viewBox', [0, 0, width, height]);
+    
+    // Create simulation
+    const simulation = d3.forceSimulation(nodes)
+        .force('link', d3.forceLink(links).id(d => d.id).distance(50))
+        .force('charge', d3.forceManyBody().strength(-100))
+        .force('center', d3.forceCenter(width / 2, height / 2));
+    
+    // Create links
+    const link = svg.append('g')
+        .selectAll('line')
+        .data(links)
+        .enter().append('line')
+        .attr('stroke', '#999')
+        .attr('stroke-opacity', 0.6)
+        .attr('stroke-width', d => Math.sqrt(d.value));
+    
+    // Create nodes
+    const node = svg.append('g')
+        .selectAll('circle')
+        .data(nodes)
+        .enter().append('circle')
+        .attr('r', d => d.size || 5)
+        .attr('fill', d => {
+            if (d.group === 1) return '#0969da'; // User
+            if (d.group === 2) return '#1a7f37'; // Repository
+            return '#9a6700'; // Collaborator
+        })
+        .call(d3.drag()
+            .on('start', dragstarted)
+            .on('drag', dragged)
+            .on('end', dragended));
+    
+    // Add labels
+    const label = svg.append('g')
+        .selectAll('text')
+        .data(nodes)
+        .enter().append('text')
+        .text(d => d.name)
+        .attr('font-size', '12px')
+        .attr('dx', 12)
+        .attr('dy', 4);
+    
+    // Update positions on simulation tick
+    simulation.on('tick', () => {
+        link
+            .attr('x1', d => d.source.x)
+            .attr('y1', d => d.source.y)
+            .attr('x2', d => d.target.x)
+            .attr('y2', d => d.target.y);
+        
+        node
+            .attr('cx', d => d.x)
+            .attr('cy', d => d.y);
+        
+        label
+            .attr('x', d => d.x)
+            .attr('y', d => d.y);
+    });
+    
+    // Drag functions
+    function dragstarted(event, d) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+    }
+    
+    function dragged(event, d) {
+        d.fx = event.x;
+        d.fy = event.y;
+    }
+    
+    function dragended(event, d) {
+        if (!event.active) simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
+    }
+},
+
+renderAchievementsTab() {
+    const container = this.elements.achievementsContainer;
+    if (!container) return;
+    
+    const achievements = this.state.achievements || [];
+    
+    if (achievements.length === 0) {
+        container.innerHTML = '<p>No achievements available.</p>';
+        return;
+    }
+    
+    container.innerHTML = achievements.map(achievement => `
+        <div class="achievement ${achievement.unlocked ? '' : 'locked'}">
+            <div class="achievement-icon">
+                <i class="fas ${achievement.icon}"></i>
+            </div>
+            <div class="achievement-name">${achievement.name}</div>
+            <div class="achievement-description">${achievement.description}</div>
+        </div>
+    `).join('');
+},
+
+renderProductivityScoreTab() {
+    // This is handled in calculateProductivityScore method
+    // which is called when the profile is rendered
+},
+
+renderCodeQualityTab() {
+    const metricsContainer = this.elements.codeQualityMetrics;
+    const recommendationsContainer = this.elements.codeQualityRecommendations;
+    
+    if (!metricsContainer || !recommendationsContainer) return;
+    
+    const metrics = this.state.codeQualityMetrics;
+    
+    if (!metrics || Object.keys(metrics).length === 0) {
+        metricsContainer.innerHTML = '<p>No code quality data available.</p>';
+        recommendationsContainer.innerHTML = '';
+        return;
+    }
+    
+    // Render metrics
+    metricsContainer.innerHTML = `
+        <div class="health-metric">
+            <div class="health-metric-value">${metrics.totalCommits || 0}</div>
+            <div class="health-metric-label">Total Commits</div>
+        </div>
+        <div class="health-metric">
+            <div class="health-metric-value">${metrics.totalIssues || 0}</div>
+            <div class="health-metric-label">Open Issues</div>
+        </div>
+        <div class="health-metric">
+            <div class="health-metric-value">${metrics.totalPullRequests || 0}</div>
+            <div class="health-metric-label">Pull Requests</div>
+        </div>
+        <div class="health-metric">
+            <div class="health-metric-value">${metrics.totalReleases || 0}</div>
+            <div class="health-metric-label">Releases</div>
+        </div>
+        <div class="health-metric">
+            <div class="health-metric-value">${metrics.avgCommitMessageLength || 0}</div>
+            <div class="health-metric-label">Avg. Commit Message Length</div>
+        </div>
+        <div class="health-metric">
+            <div class="health-metric-value">${metrics.avgCodeCoverage || 0}%</div>
+            <div class="health-metric-label">Avg. Code Coverage</div>
+        </div>
+        <div class="health-metric">
+            <div class="health-metric-value">${metrics.technicalDebt || 0}</div>
+            <div class="health-metric-label">Technical Debt</div>
+        </div>
+        <div class="health-metric">
+            <div class="health-metric-value">${metrics.documentationQuality || 0}%</div>
+            <div class="health-metric-label">Documentation Quality</div>
+        </div>
+    `;
+    
+    // Generate recommendations
+    const recommendations = [];
+    
+    if (metrics.avgCommitMessageLength < 20) {
+        recommendations.push("Consider writing more descriptive commit messages to improve code quality.");
+    }
+    
+    if (metrics.avgCodeCoverage < 70) {
+        recommendations.push("Increase code coverage to improve code quality and reliability.");
+    }
+    
+    if (metrics.technicalDebt > 50) {
+        recommendations.push("Address technical debt to improve maintainability and performance.");
+    }
+    
+    if (metrics.documentationQuality < 70) {
+        recommendations.push("Improve documentation to make your code more accessible to others.");
+    }
+    
+    if (recommendations.length === 0) {
+        recommendations.push("Your code quality looks good! Keep up the great work.");
+    }
+    
+    recommendationsContainer.innerHTML = `
+        <h3>Recommendations</h3>
+        <ul>
+            ${recommendations.map(rec => `<li>${rec}</li>`).join('')}
+        </ul>
+    `;
+},
+
+renderSocialInfluenceTab() {
+    const metricsContainer = this.elements.socialInfluenceMetrics;
+    const recommendationsContainer = this.elements.socialInfluenceRecommendations;
+    
+    if (!metricsContainer || !recommendationsContainer) return;
+    
+    const metrics = this.state.socialInfluenceMetrics;
+    
+    if (!metrics || Object.keys(metrics).length === 0) {
+        metricsContainer.innerHTML = '<p>No social influence data available.</p>';
+        recommendationsContainer.innerHTML = '';
+        return;
+    }
+    
+    // Render metrics
+    metricsContainer.innerHTML = `
+        <div class="health-metric">
+            <div class="health-metric-value">${metrics.followers || 0}</div>
+            <div class="health-metric-label">Followers</div>
+        </div>
+        <div class="health-metric">
+            <div class="health-metric-value">${metrics.following || 0}</div>
+            <div class="health-metric-label">Following</div>
+        </div>
+        <div class="health-metric">
+            <div class="health-metric-value">${metrics.totalStars || 0}</div>
+            <div class="health-metric-label">Total Stars</div>
+        </div>
+        <div class="health-metric">
+            <div class="health-metric-value">${metrics.totalForks || 0}</div>
+            <div class="health-metric-label">Total Forks</div>
+        </div>
+        <div class="health-metric">
+            <div class="health-metric-value">${metrics.totalWatchers || 0}</div>
+            <div class="health-metric-label">Total Watchers</div>
+        </div>
+        <div class="health-metric">
+            <div class="health-metric-value">${metrics.followerToFollowingRatio || 0}</div>
+            <div class="health-metric-label">Follower/Following Ratio</div>
+        </div>
+        <div class="health-metric">
+            <div class="health-metric-value">${metrics.starToForkRatio || 0}</div>
+            <div class="health-metric-label">Star/Fork Ratio</div>
+        </div>
+        <div class="health-metric">
+            <div class="health-metric-value">${metrics.influenceScore || 0}</div>
+            <div class="health-metric-label">Influence Score</div>
+        </div>
+    `;
+    
+    // Generate recommendations
+    const recommendations = [];
+    
+    if (metrics.followers < 50) {
+        recommendations.push("Engage more with the community to increase your followers.");
+    }
+    
+    if (metrics.followerToFollowingRatio < 1) {
+        recommendations.push("You're following more people than are following you. Consider unfollowing inactive accounts.");
+    }
+    
+    if (metrics.totalStars < 100) {
+        recommendations.push("Contribute to high-quality projects to increase your stars.");
+    }
+    
+    if (recommendations.length === 0) {
+        recommendations.push("Your social influence looks good! Keep up the great work.");
+    }
+    
+    recommendationsContainer.innerHTML = `
+        <h3>Recommendations</h3>
+        <ul>
+            ${recommendations.map(rec => `<li>${rec}</li>`).join('')}
+        </ul>
+    `;
+},
+
+renderActivityPatternsTab() {
+    const canvas = this.elements.activityPatternsCanvas;
+    const insightsContainer = this.elements.activityPatternsInsights;
+    
+    if (!canvas || !insightsContainer) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Set canvas size
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    
+    const data = this.state.activityPatternsData;
+    
+    if (!data || !data.dayOfWeekActivity || !data.hourOfDayActivity) {
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.fillText('No activity patterns data available', canvas.width / 2, canvas.height / 2);
+        insightsContainer.innerHTML = '';
+        return;
+    }
+    
+    // Create chart
+    try {
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+                datasets: [{
+                    label: 'Activity by Day of Week',
+                    data: data.dayOfWeekActivity,
+                    backgroundColor: 'rgba(9, 105, 218, 0.5)',
+                    borderColor: 'rgba(9, 105, 218, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+        
+        // Generate insights
+        const insights = [];
+        insights.push(`You're most active on ${data.mostActiveDay}.`);
+        insights.push(`Your peak activity hour is around ${data.mostActiveHour}:00.`);
+        
+        insightsContainer.innerHTML = `
+            <h3>Activity Insights</h3>
+            <ul>
+                ${insights.map(insight => `<li>${insight}</li>`).join('')}
+            </ul>
+        `;
+    } catch (error) {
+        console.error("Error creating activity patterns chart:", error);
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.fillText('Error loading activity patterns data', canvas.width / 2, canvas.height / 2);
+    }
+},
+
+renderProjectDiversityTab() {
+    const canvas = this.elements.projectDiversityCanvas;
+    const insightsContainer = this.elements.projectDiversityInsights;
+    
+    if (!canvas || !insightsContainer) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Set canvas size
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    
+    const data = this.state.projectDiversityData;
+    
+    if (!data || !data.languageBreakdown) {
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.fillText('No project diversity data available', canvas.width / 2, canvas.height / 2);
+        insightsContainer.innerHTML = '';
+        return;
+    }
+    
+    // Create chart
+    try {
+        const languages = Object.keys(data.languageBreakdown);
+        const counts = Object.values(data.languageBreakdown);
+        
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: languages,
+                datasets: [{
+                    data: counts,
+                    backgroundColor: [
+                        '#f1e05a', // JavaScript
+                        '#3572A5', // Python
+                        '#f34b7d', // C++
+                        '#e34c26', // HTML
+                        '#563d7c', // CSS
+                        '#239120', // C#
+                        '#b07219', // Java
+                        '#2b7489', // TypeScript
+                        '#00ADD8', // Go
+                        '#dea584', // Rust
+                        '#4F5D95', // PHP
+                        '#701516', // Ruby
+                        '#ffac45'  // Swift
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+        
+        // Generate insights
+        const insights = [];
+        insights.push(`You've worked with ${data.languageCount} different programming languages.`);
+        insights.push(`Your projects cover ${data.topicCount} different topics.`);
+        insights.push(`Your average repository size is ${data.avgRepoSize} KB.`);
+        insights.push(`Your project diversity score is ${data.diversityScore}.`);
+        
+        insightsContainer.innerHTML = `
+            <h3>Project Diversity Insights</h3>
+            <ul>
+                ${insights.map(insight => `<li>${insight}</li>`).join('')}
+            </ul>
+        `;
+    } catch (error) {
+        console.error("Error creating project diversity chart:", error);
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.fillText('Error loading project diversity data', canvas.width / 2, canvas.height / 2);
+    }
+},
+
+renderTimezoneAnalysisTab() {
+    const canvas = this.elements.timezoneCanvas;
+    const insightsContainer = this.elements.timezoneInsights;
+    
+    if (!canvas || !insightsContainer) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Set canvas size
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    
+    const data = this.state.timezoneData;
+    
+    if (!data || !data.activityByTimezone) {
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.fillText('No timezone data available', canvas.width / 2, canvas.height / 2);
+        insightsContainer.innerHTML = '';
+        return;
+    }
+    
+    // Create chart
+    try {
+        const timezones = Object.keys(data.activityByTimezone);
+        const activities = Object.values(data.activityByTimezone);
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: timezones.map(tz => this.getTimezoneName(parseInt(tz))),
+                datasets: [{
+                    label: 'Activity by Timezone',
+                    data: activities,
+                    backgroundColor: 'rgba(9, 105, 218, 0.5)',
+                    borderColor: 'rgba(9, 105, 218, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+        
+        // Generate insights
+        const insights = [];
+        insights.push(`Your most likely timezone is ${data.timezoneName}.`);
+        
+        insightsContainer.innerHTML = `
+            <h3>Timezone Insights</h3>
+            <ul>
+                ${insights.map(insight => `<li>${insight}</li>`).join('')}
+            </ul>
+        `;
+    } catch (error) {
+        console.error("Error creating timezone analysis chart:", error);
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.fillText('Error loading timezone data', canvas.width / 2, canvas.height / 2);
+    }
+},
+
+async askAI() {
+    const query = this.elements.aiQueryInput ? this.elements.aiQueryInput.value.trim() : '';
+    if (!query) return this.showError("Please enter a question for the AI.");
+
+    const responseEl = this.elements.aiResponse;
+    if (responseEl) {
+        responseEl.style.display = 'block';
+        responseEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> AI is thinking...';
+    }
+
+    const context = `
+        Profile: ${JSON.stringify(this.state.profileData, null, 2)}
+        Top Repositories: ${JSON.stringify((this.state.repositories || []).slice(0, 5).map(r => ({ 
+            name: r && r.name, 
+            lang: r && r.language, 
+            stars: r && r.stargazers_count, 
+            desc: r && r.description 
+        })), null, 2)}
+        Contribution Streak: ${(this.state.streakData && this.state.streakData.current) || 0} days (Longest: ${(this.state.streakData && this.state.streakData.longest) || 0} days)
+    `;
+    
+    try {
+        // Simulate AI response since we can't use the real API without a proxy
+        setTimeout(() => {
+            if (responseEl) {
+                responseEl.innerHTML = `
+                    <h3>Simulated AI Response</h3>
+                    <p>I apologize, but I couldn't connect to the AI service. Here's a simulated response based on your query:</p>
+                    <p>Based on the profile data, this developer appears to be ${(this.state.profileData && this.state.profileData.followers > 100) ? 'well-established' : 'emerging'} in the GitHub community with ${(this.state.profileData && this.state.profileData.public_repos) || 0} public repositories.</p>
+                    <p>Their primary programming languages appear to be ${Object.keys(this.getLanguageBreakdown()).slice(0, 3).join(', ')}.</p>
+                    <p>They have maintained a contribution streak of ${(this.state.streakData && this.state.streakData.current) || 0} days, with their longest streak being ${(this.state.streakData && this.state.streakData.longest) || 0} days.</p>
+                `;
+            }
+        }, 1500);
+    } catch (error) {
+        if (responseEl) {
+            responseEl.innerHTML = `<p>Error: ${error.message}</p>`;
+        }
+    }
+},
+
+async handleCompare() {
+    const username1 = this.elements.usernameInput ? this.elements.usernameInput.value.trim() : '';
+    const username2 = this.elements.compareUsernameInput ? this.elements.compareUsernameInput.value.trim() : '';
+    
+    if (!username1 || !username2) return this.showError("Please enter both usernames to compare.");
+
+    this.showLoading();
+    try {
+        const [user1, user2] = await Promise.all([
+            this.fetchJSON(`https://api.github.com/users/${username1}`),
+            this.fetchJSON(`https://api.github.com/users/${username2}`)
+        ]);
+        
+        if (!user1 || !user2) throw new Error("One or both users not found.");
+        
+        // Fetch additional data for comparison
+        const [user1Repos, user2Repos] = await Promise.all([
+            this.fetchJSON(`https://api.github.com/users/${username1}/repos?per_page=100`),
+            this.fetchJSON(`https://api.github.com/users/${username2}/repos?per_page=100`)
+        ]);
+        
+        // Calculate additional metrics
+        user1.totalStars = (user1Repos || []).reduce((total, repo) => total + (repo && repo.stargazers_count ? repo.stargazers_count : 0), 0);
+        user2.totalStars = (user2Repos || []).reduce((total, repo) => total + (repo && repo.stargazers_count ? repo.stargazers_count : 0), 0);
+        
+        user1.totalForks = (user1Repos || []).reduce((total, repo) => total + (repo && repo.forks_count ? repo.forks_count : 0), 0);
+        user2.totalForks = (user2Repos || []).reduce((total, repo) => total + (repo && repo.forks_count ? repo.forks_count : 0), 0);
+        
+        user1.avgRepoSize = (user1Repos || []).reduce((total, repo) => total + (repo && repo.size ? repo.size : 0), 0) / (user1Repos || []).length;
+        user2.avgRepoSize = (user2Repos || []).reduce((total, repo) => total + (repo && repo.size ? repo.size : 0), 0) / (user2Repos || []).length;
+        
+        this.renderComparison(user1, user2);
+        if (this.elements.comparisonResults) {
+            this.elements.comparisonResults.style.display = 'block';
+        }
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    } catch (error) {
+        this.showError(error.message);
+    } finally {
+        this.hideLoading();
+    }
+},
+
+renderComparison(user1, user2) {
+    const table = document.getElementById('comparison-table');
+    if (!table) return;
+    
+    const fields = [
+        { key: 'name', label: 'Name' },
+        { key: 'login', label: 'Username' },
+        { key: 'public_repos', label: 'Public Repos' },
+        { key: 'followers', label: 'Followers' },
+        { key: 'following', label: 'Following' },
+        { key: 'totalStars', label: 'Total Stars' },
+        { key: 'totalForks', label: 'Total Forks' },
+        { key: 'avgRepoSize', label: 'Avg. Repo Size (KB)', format: (val) => Math.round(val) },
+        { key: 'created_at', label: 'Account Created', format: (val) => new Date(val).toLocaleDateString() }
+    ];
+    
+    table.innerHTML = `
+        <thead>
+            <tr><th>Metric</th><th>${user1.login || 'User 1'}</th><th>${user2.login || 'User 2'}</th><th>Winner</th></tr>
+        </thead>
+        <tbody>
+            ${fields.map(field => {
+                const val1 = field.format ? field.format(user1[field.key]) : (user1[field.key] || 'N/A');
+                const val2 = field.format ? field.format(user2[field.key]) : (user2[field.key] || 'N/A');
+                
+                let winner = '';
+                if (field.key === 'created_at') {
+                    winner = new Date(user1[field.key]) < new Date(user2[field.key]) ? user1.login : user2.login;
+                } else if (typeof user1[field.key] === 'number' && typeof user2[field.key] === 'number') {
+                    winner = user1[field.key] > user2[field.key] ? user1.login : user2.login;
+                }
+                
+                return `
+                    <tr>
+                        <td><strong>${field.label}</strong></td>
+                        <td>${val1}</td>
+                        <td>${val2}</td>
+                        <td>${winner ? `<strong>${winner}</strong>` : 'Tie'}</td>
+                    </tr>
+                `;
+            }).join('')}
+        </tbody>
+    `;
+},
+
+// --- README Modal --- 
+async fetchAndShowReadme(repoFullName) {
+    if (!this.elements.readmeModal || !this.elements.readmeTitle || !this.elements.readmeBody) return;
+    
+    this.elements.readmeModal.style.display = 'block';
+    this.elements.readmeBody.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading README...';
+
+    try {
+        const repoData = await this.fetchJSON(`https://api.github.com/repos/${repoFullName}`);
+        if (!repoData) throw new Error("Repository not found.");
+        
+        const defaultBranch = repoData.default_branch || 'main';
+
+        let readmeData = await this.fetchJSON(`https://api.github.com/repos/${repoFullName}/readme`);
+        if (!readmeData) {
+            throw new Error("No README found.");
+        }
+        
+        const content = atob(readmeData.content.replace(/\n/g, ''));
+        
+        this.elements.readmeTitle.textContent = `README of ${repoFullName}`;
+        this.elements.readmeBody.innerHTML = marked.parse(content);
+        
+    } catch (error) {
+        this.elements.readmeBody.innerHTML = `<p>Could not load README. ${error.message}</p>`;
+    }
+},
+
+// --- Export Functions ---
+exportToPDF() {
+    try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        doc.setFontSize(20);
+        doc.text(`GitHub Profile: ${(this.state.profileData && this.state.profileData.login) || 'Unknown'}`, 20, 20);
+        
+        doc.setFontSize(12);
+        doc.text(`Name: ${(this.state.profileData && this.state.profileData.name) || 'N/A'}`, 20, 30);
+        doc.text(`Bio: ${(this.state.profileData && this.state.profileData.bio) || 'N/A'}`, 20, 40);
+        doc.text(`Location: ${(this.state.profileData && this.state.profileData.location) || 'N/A'}`, 20, 50);
+        doc.text(`Company: ${(this.state.profileData && this.state.profileData.company) || 'N/A'}`, 20, 60);
+        doc.text(`Followers: ${(this.state.profileData && this.state.profileData.followers) || 0}`, 20, 70);
+        doc.text(`Following: ${(this.state.profileData && this.state.profileData.following) || 0}`, 20, 80);
+        doc.text(`Public Repos: ${(this.state.profileData && this.state.profileData.public_repos) || 0}`, 20, 90);
+        
+        doc.setFontSize(16);
+        doc.text('Top Repositories:', 20, 110);
+        
+        doc.setFontSize(12);
+        const topRepos = (this.state.repositories || []).slice(0, 5);
+        topRepos.forEach((repo, index) => {
+            const y = 120 + (index * 10);
+            doc.text(`${(repo && repo.name) || 'Unknown'} (${(repo && repo.stargazers_count) || 0} stars)`, 20, y);
+        });
+        
+        doc.save(`${(this.state.profileData && this.state.profileData.login) || 'profile'}_profile.pdf`);
+    } catch (error) {
+        this.showError(`Error exporting PDF: ${error.message}`);
+    }
+},
+
+exportToJSON() {
+    try {
+        const profileData = {
+            profile: this.state.profileData,
+            repositories: this.state.repositories,
+            starred: this.state.starredRepos,
+            activity: this.state.activityData,
+            streak: this.state.streakData,
+            skills: this.state.skillsData,
+            achievements: this.state.achievements,
+            productivityScore: this.state.productivityScore
+        };
+        
+        const dataStr = JSON.stringify(profileData, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+        
+        const exportFileDefaultName = `${(this.state.profileData && this.state.profileData.login) || 'profile'}_profile.json`;
+        
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        linkElement.click();
+    } catch (error) {
+        this.showError(`Error exporting JSON: ${error.message}`);
+    }
+},
+
+exportToCSV() {
+    try {
+        const repos = this.state.repositories || [];
+        if (!repos.length) {
+            this.showError("No repository data to export.");
+            return;
+        }
+
+        const headers = ['Name', 'Description', 'Language', 'Stars', 'Forks', 'Created At', 'Updated At'];
+        const csvContent = [
+            headers.join(','),
+            ...repos.map(repo => [
+                repo.name || '',
+                `"${(repo.description || '').replace(/"/g, '""')}"`, // Escape quotes in description
+                repo.language || '',
+                repo.stargazers_count || 0,
+                repo.forks_count || 0,
+                repo.created_at || '',
+                repo.updated_at || ''
+            ].join(','))
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `${(this.state.profileData && this.state.profileData.login) || 'profile'}_repositories.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } catch (error) {
+        this.showError(`Error exporting CSV: ${error.message}`);
+    }
+},
+
+exportToImage() {
+    try {
+        const profileWrapper = document.getElementById('profile-wrapper');
+        if (!profileWrapper) return;
+
+        // Use html2canvas to capture the profile
+        html2canvas(profileWrapper, {
+            backgroundColor: getComputedStyle(document.body).getPropertyValue('--color-canvas-default'),
+            scale: 2 // Higher resolution
+        }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `${(this.state.profileData && this.state.profileData.login) || 'profile'}_analysis.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }).catch(error => {
+            console.error("Error exporting image:", error);
+            this.showError(`Error exporting image: ${error.message}`);
+        });
+    } catch (error) {
+        this.showError(`Error exporting image: ${error.message}`);
+    }
+},
+
+// --- Helper Functions ---
+async fetchJSON(url) {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+        return response.json();
+    } catch (error) {
+        console.error(`Error fetching ${url}:`, error);
+        throw error;
+    }
+},
+
+getLanguageColor(language) {
+    const colors = { 
+        JavaScript: '#f1e05a', 
+        Python: '#3572A5', 
+        'C++': '#f34b7d', 
+        HTML: '#e34c26', 
+        CSS: '#563d7c', 
+        'C#': '#239120', 
+        Java: '#b07219',
+        TypeScript: '#2b7489',
+        Go: '#00ADD8',
+        Rust: '#dea584',
+        PHP: '#4F5D95',
+        Ruby: '#701516',
+        Swift: '#ffac45'
+    };
+    return colors[language] || '#cccccc';
+},
+
+getLanguageBreakdown() {
+    const languages = {};
+    const repos = Array.isArray(this.state.repositories) ? this.state.repositories : [];
+    
+    repos.forEach(repo => {
+        if (repo && repo.language) {
+            languages[repo.language] = (languages[repo.language] || 0) + 1;
+        }
+    });
+    return languages;
+},
+
+formatTimeAgo(date) {
+    if (!date) return 'Unknown time';
+    
+    const seconds = Math.floor((new Date() - date) / 1000);
+    if (seconds < 60) return 'just now';
+    
+    const intervals = { year: 31536000, month: 2592000, day: 86400, hour: 3600, minute: 60 };
+    for (const [unit, secondsInUnit] of Object.entries(intervals)) {
+        const interval = Math.floor(seconds / secondsInUnit);
+        if (interval >= 1) return `${interval} ${unit}${interval > 1 ? 's' : ''} ago`;
+    }
+    return 'some time ago';
+},
+
+getDayName(dayIndex) {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return days[dayIndex] || 'Unknown';
+},
+
+getTimezoneName(offset) {
+    // This is a simplified mapping
+    const timezones = {
+        '-720': 'UTC-12',
+        '-660': 'UTC-11',
+        '-600': 'UTC-10',
+        '-540': 'UTC-9',
+        '-480': 'UTC-8',
+        '-420': 'UTC-7',
+        '-360': 'UTC-6',
+        '-300': 'UTC-5',
+        '-240': 'UTC-4',
+        '-180': 'UTC-3',
+        '-120': 'UTC-2',
+        '-60': 'UTC-1',
+        '0': 'UTC',
+        '60': 'UTC+1',
+        '120': 'UTC+2',
+        '180': 'UTC+3',
+        '240': 'UTC+4',
+        '300': 'UTC+5',
+        '360': 'UTC+6',
+        '420': 'UTC+7',
+        '480': 'UTC+8',
+        '540': 'UTC+9',
+        '600': 'UTC+10',
+        '660': 'UTC+11',
+        '720': 'UTC+12'
+    };
+    return timezones[offset] || `UTC${offset >= 0 ? '+' : ''}${offset / 60}`;
+},
+
+switchTab(tabName) {
+    this.state.currentTab = tabName;
+    
+    this.elements.tabNav.forEach(tab => {
+        if (tab && tab.dataset) {
+            tab.classList.toggle('active', tab.dataset.tab === tabName);
+        }
+    });
+    
+    this.elements.tabPanes.forEach(pane => {
+        if (pane && pane.id) {
+            pane.classList.toggle('active', pane.id === tabName);
+        }
+    });
+    
+    // Special handling for tabs that need to be rendered on demand
+    if (tabName === 'follower-growth' && (!this.state.followerGrowthData || !this.state.followerGrowthData.months || this.state.followerGrowthData.months.length === 0)) {
+        this.generateFollowerGrowthData();
+        this.renderFollowerGrowthTab();
+    }
+},
+
+setRepoView(view) {
+    this.state.repoView = view;
+    if (this.elements.listViewBtn) {
+        this.elements.listViewBtn.classList.toggle('active', view === 'list');
+    }
+    if (this.elements.gridViewBtn) {
+        this.elements.gridViewBtn.classList.toggle('active', view === 'grid');
+    }
+    this.renderRepositories();
+},
+
+toggleCompareMode() {
+    if (!this.elements.compareSection) return;
+    
+    const isVisible = this.elements.compareSection.style.display !== 'none';
+    this.elements.compareSection.style.display = isVisible ? 'none' : 'flex';
+    
+    if (this.elements.compareUsernameInput) {
+        this.elements.compareUsernameInput.value = '';
+    }
+    if (this.elements.comparisonResults) {
+        this.elements.comparisonResults.style.display = 'none';
+    }
+},
+
+toggleTheme() {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    localStorage.setItem('darkMode', isDark);
+    if (this.elements.themeToggle) {
+        this.elements.themeToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    }
+},
+
+loadTheme() {
+    const isDark = localStorage.getItem('darkMode') === 'true';
+    if (isDark) {
+        document.body.classList.add('dark-mode');
+        if (this.elements.themeToggle) {
+            this.elements.themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+        }
+    }
+},
+
+addToSearchHistory(username) {
+    if (!username || !this.state.searchHistory) return;
+    
+    if (!this.state.searchHistory.includes(username)) {
+        this.state.searchHistory.unshift(username);
+        this.state.searchHistory = this.state.searchHistory.slice(0, 5);
+        localStorage.setItem('searchHistory', JSON.stringify(this.state.searchHistory));
+        this.renderSearchHistory();
+    }
+},
+
+renderSearchHistory() {
+    const historyContainer = document.getElementById('search-history');
+    if (!historyContainer || !this.state.searchHistory) return;
+    
+    historyContainer.innerHTML = this.state.searchHistory.map(user => 
+        `<span class="history-item" onclick="App.elements.usernameInput.value='${user}'; App.handleSearch();"><i class="fas fa-history"></i>${user}</span>`
+    ).join('');
+},
+
+renderPagination(totalItems, type) {
+    const totalPages = Math.ceil(totalItems / this.state.reposPerPage);
+    const paginationContainer = type === 'repos' ? 
+        this.elements.repoPagination : 
+        this.elements.starredPagination;
+    
+    if (!paginationContainer) return;
+    
+    paginationContainer.innerHTML = '';
+
+    if (totalPages <= 1) return;
+
+    for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.classList.toggle('active', i === this.state.currentPage[type]);
+        btn.addEventListener('click', () => {
+            this.state.currentPage[type] = i;
+            if (type === 'repos') {
+                this.filterAndRenderRepos();
+            } else {
+                this.filterAndRenderStarred();
+            }
+        });
+        paginationContainer.appendChild(btn);
+    }
+},
+
+populateLanguageFilter() {
+    if (!this.elements.repoLanguageFilter) return;
+    
+    const languages = new Set();
+    const repos = Array.isArray(this.state.repositories) ? this.state.repositories : [];
+    
+    repos.forEach(repo => {
+        if (repo && repo.language) {
+            languages.add(repo.language);
+        }
+    });
+    
+    const currentValue = this.elements.repoLanguageFilter.value;
+    this.elements.repoLanguageFilter.innerHTML = '<option value="">Language: All</option>';
+    
+    Array.from(languages).sort().forEach(lang => {
+        const option = document.createElement('option');
+        option.value = lang;
+        option.textContent = lang;
+        this.elements.repoLanguageFilter.appendChild(option);
+    });
+    
+    this.elements.repoLanguageFilter.value = currentValue;
+},
+
+populateStarredLanguageFilter() {
+    if (!this.elements.starredLanguageFilter) return;
+    
+    const languages = new Set();
+    const repos = Array.isArray(this.state.starredRepos) ? this.state.starredRepos : [];
+    
+    repos.forEach(repo => {
+        if (repo && repo.language) {
+            languages.add(repo.language);
+        }
+    });
+    
+    const currentValue = this.elements.starredLanguageFilter.value;
+    this.elements.starredLanguageFilter.innerHTML = '<option value="">Language: All</option>';
+    
+    Array.from(languages).sort().forEach(lang => {
+        const option = document.createElement('option');
+        option.value = lang;
+        option.textContent = lang;
+        this.elements.starredLanguageFilter.appendChild(option);
+    });
+    
+    this.elements.starredLanguageFilter.value = currentValue;
+},
+
+showLoading() { 
+    if (this.elements.loadingContainer) {
+        this.elements.loadingContainer.style.display = 'block'; 
+    }
+},
+hideLoading() { 
+    if (this.elements.loadingContainer) {
+        this.elements.loadingContainer.style.display = 'none'; 
+    }
+},
+showResults() { 
+    if (this.elements.profileWrapper) {
+        this.elements.profileWrapper.style.display = 'block'; 
+    }
+},
+hideResults() { 
+    if (this.elements.profileWrapper) {
+        this.elements.profileWrapper.style.display = 'none'; 
+    }
+},
+showError(message) {
+    if (this.elements.errorContainer) {
+        this.elements.errorContainer.textContent = message;
+        this.elements.errorContainer.style.display = 'block';
+    }
+    this.hideLoading();
+},
+clearErrors() { 
+    if (this.elements.errorContainer) {
+        this.elements.errorContainer.style.display = 'none'; 
+    }
+}
+};
+
+App.init();
+});
+</script>
 </body>
 </html>
